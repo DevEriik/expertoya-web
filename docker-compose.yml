@@ -1,0 +1,11 @@
+services:
+  web:
+    build: .
+    container_name: expertoya-web
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      - NODE_ENV=development
