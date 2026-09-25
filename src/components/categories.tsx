@@ -8,6 +8,8 @@ export const Categories = () => {
     "Pintor",
     "Carpintero",
   ];
+  //Variable para probar al detector
+  const noSirvo = "hola";
 
   return (
     <section className="px-4 py-8 max-w-4xl mx-auto w-full">
