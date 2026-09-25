@@ -1,0 +1,65 @@
+name: Guardián del Código (ESLint)
+
+on:
+    pull_request:
+        branches:
+            - developer
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Ejecutar ESLint
+        id: run_eslint
+        # Ejecutamos el linter. "continue-on-error" permite que el bot de Discord avise en lugar de que el proceso simplemente muera aquí.
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Emitir veredicto en Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_FRONTEND }}
+        run: |
+          OUTCOME="${{ steps.run_eslint.outcome }}"
+
+          if [ "$OUTCOME" == "success" ]; then
+            COLOR=65280 # Verde
+            TITULO="✅ Código Limpio Aprobado"
+            MENSAJE="El linter no encontró errores de sintaxis. ¡El código está impecable y listo para integrarse!"
+          else
+            COLOR=16711680 # Rojo
+            TITULO="❌ Errores de Código Detectados"
+            MENSAJE="El Guardián detuvo el Pull Request. Hay variables sin usar, errores de formato o fallos de sintaxis."
+          fi
+
+          cat <<EOF > discord_payload.json
+          {
+            "username": "Guardián del Código",
+            "avatar_url": "https://cdn-icons-png.flaticon.com/512/8061/8061236.png",
+            "embeds": [{
+              "title": "$TITULO",
+              "description": "$MENSAJE\n\n**Rama de origen:** \`${{ github.head_ref }}\`\n**Autor:** \`${{ github.actor }}\`",
+              "color": $COLOR,
+              "fields": [
+                { "name": "🔍 ¿Cómo solucionarlo?", "value": "Ejecuta \`npm run lint\` en tu terminal local para ver en qué línea te equivocaste, corrígelo y vuelve a subir el commit." }
+              ]
+            }]
+          }
+          EOF
+
+          curl -H "Content-Type: application/json" -X POST -d @discord_payload.json $DISCORD_WEBHOOK
+
+          # Si el linter falló, forzamos la detención de GitHub Actions para que el PR marque error
+          if [ "$OUTCOME" != "success" ]; then
+            exit 1
+          fi
