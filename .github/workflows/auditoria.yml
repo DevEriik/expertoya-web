@@ -35,22 +35,28 @@ jobs:
           urls: "http://localhost:4173"
           temporaryPublicStorage: true
 
-      - name: Enviar alerta a Discord
+      - name: Extraer enlace y enviar a Discord
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_FRONTEND }}
         run: |
-          curl -H "Content-Type: application/json" \
-               -X POST \
-               -d '{
-                 "username": "Inspector de Calidad",
-                 "avatar_url": "https://developers.google.com/static/web/tools/lighthouse/images/lighthouse-logo.png",
-                 "embeds": [{
-                   "title": "📊 Reporte Integral Generado",
-                   "description": "Se ha ejecutado una nueva auditoría sobre la rama developer.",
-                   "color": 16734296,
-                   "fields": [
-                     { "name": "🔗 Resultados detallados", "value": "[Haz clic aquí para ver las métricas](${{ steps.lighthouse.outputs.links }})" }
-                   ]
-                 }]
-               }' \
-               $DISCORD_WEBHOOK
+
+          URL_REPORTE=$(echo '${{ steps.lighthouse.outputs.links }}' | jq -r 'to_entries[0].value')
+
+
+          cat <<EOF > discord_payload.json
+          {
+            "username": "Inspector de Calidad",
+            "avatar_url": "https://developers.google.com/static/web/tools/lighthouse/images/lighthouse-logo.png",
+            "embeds": [{
+              "title": "📊 Reporte Integral Generado",
+              "description": "Se ha ejecutado una nueva auditoría sobre la rama developer.",
+              "color": 16734296,
+              "fields": [
+                { "name": "🔗 Resultados detallados", "value": "[Haz clic aquí para ver las métricas]($URL_REPORTE)" }
+              ]
+            }]
+          }
+          EOF
+
+
+          curl -H "Content-Type: application/json" -X POST -d @discord_payload.json $DISCORD_WEBHOOK
