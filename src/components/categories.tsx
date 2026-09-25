@@ -8,6 +8,7 @@ export const Categories = () => {
     "Pintor",
     "Carpintero",
   ];
+  //Variable para probar al detector
   const noSirvo = "hola";
 
   return (
