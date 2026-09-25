@@ -35,28 +35,48 @@ jobs:
           urls: "http://localhost:4173"
           temporaryPublicStorage: true
 
-      - name: Extraer enlace y enviar a Discord
+      - name: Extraer puntajes y enviar a Discord
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_FRONTEND }}
         run: |
-
+          # 1. Extraer el link público interactivo
           URL_REPORTE=$(echo '${{ steps.lighthouse.outputs.links }}' | jq -r 'to_entries[0].value')
 
+          # 2. Leer los puntajes del archivo JSON oculto que generó Lighthouse
+          REPORT_FILE=$(ls .lighthouseci/lhr-*.json | head -n 1)
 
+          PERF=$(jq '(.categories.performance.score // 0) * 100 | round' $REPORT_FILE)
+          ACC=$(jq '(.categories.accessibility.score // 0) * 100 | round' $REPORT_FILE)
+          BP=$(jq '(.categories["best-practices"].score // 0) * 100 | round' $REPORT_FILE)
+          SEO=$(jq '(.categories.seo.score // 0) * 100 | round' $REPORT_FILE)
+
+          # 3. Asignar emojis según el puntaje oficial (90+ verde, 50-89 amarillo, <50 rojo)
+          get_color() {
+            if [ "$1" -ge 90 ]; then echo "🟢";
+            elif [ "$1" -ge 50 ]; then echo "🟡";
+            else echo "🔴"; fi
+          }
+
+          E_PERF=$(get_color $PERF)
+          E_ACC=$(get_color $ACC)
+          E_BP=$(get_color $BP)
+          E_SEO=$(get_color $SEO)
+
+          # 4. Construir la tarjeta para Discord con el texto incrustado
           cat <<EOF > discord_payload.json
           {
             "username": "Inspector de Calidad",
             "avatar_url": "https://developers.google.com/static/web/tools/lighthouse/images/lighthouse-logo.png",
             "embeds": [{
-              "title": "📊 Reporte Integral Generado",
-              "description": "Se ha ejecutado una nueva auditoría sobre la rama developer.",
+              "title": "📊 Reporte Integral de Lighthouse",
+              "description": "Resultados de la auditoría sobre la rama **developer**:\n\n⚡ **Rendimiento:** ${PERF}/100 ${E_PERF}\n♿ **Accesibilidad:** ${ACC}/100 ${E_ACC}\n✨ **Mejores Prácticas:** ${BP}/100 ${E_BP}\n🔎 **SEO:** ${SEO}/100 ${E_SEO}",
               "color": 16734296,
               "fields": [
-                { "name": "🔗 Resultados detallados", "value": "[Haz clic aquí para ver las métricas]($URL_REPORTE)" }
+                { "name": "🔗 Detalles interactivos", "value": "[Ver gráficos y recomendaciones completas]($URL_REPORTE)" }
               ]
             }]
           }
           EOF
 
-
+          # 5. Enviar mensaje
           curl -H "Content-Type: application/json" -X POST -d @discord_payload.json $DISCORD_WEBHOOK
