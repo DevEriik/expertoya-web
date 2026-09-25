@@ -8,6 +8,7 @@ export const Categories = () => {
     "Pintor",
     "Carpintero",
   ];
+  const noSirvo = "hola";
 
   return (
     <section className="px-4 py-8 max-w-4xl mx-auto w-full">
