@@ -1,0 +1,56 @@
+name: Reporte de Calidad Web
+
+on:
+  push:
+    branches:
+      - developer
+
+jobs:
+  auditoria:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Compilar proyecto (Vite)
+        run: npm run build
+
+      - name: Levantar servidor temporal
+        run: |
+          npm run preview &
+          sleep 5
+
+      - name: Ejecutar Auditoría Lighthouse
+        id: lighthouse
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: "http://localhost:4173"
+          temporaryPublicStorage: true
+
+      - name: Enviar alerta a Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_FRONTEND }}
+        run: |
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d '{
+                 "username": "Inspector de Calidad",
+                 "avatar_url": "https://developers.google.com/static/web/tools/lighthouse/images/lighthouse-logo.png",
+                 "embeds": [{
+                   "title": "📊 Reporte Integral Generado",
+                   "description": "Se ha ejecutado una nueva auditoría sobre la rama developer.",
+                   "color": 16734296,
+                   "fields": [
+                     { "name": "🔗 Resultados detallados", "value": "[Haz clic aquí para ver las métricas](${{ steps.lighthouse.outputs.links }})" }
+                   ]
+                 }]
+               }' \
+               $DISCORD_WEBHOOK
