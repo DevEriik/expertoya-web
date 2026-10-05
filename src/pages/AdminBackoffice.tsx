@@ -17,30 +17,32 @@ export const AdminBackoffice = () => {
   const [imagenModal, setImagenModal] = useState<string | null>(null);
   const [cargando, setCargando] = useState<boolean>(true);
 
-  const cargarPendientes = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      const respuesta = await fetch("http://localhost:3000/api/admin/pending-professionals", {
-        headers: {
-          Authorization: "Bearer " + token,
-        },
-      });
-
-      if (respuesta.ok) {
-        const datos = await respuesta.json();
-        setPendientes(datos);
-      } else {
-        console.error("Error en la respuesta del backend:", respuesta.status);
-      }
-    } catch (error) {
-      console.error("Error al obtener profesionales:", error);
-    } finally {
-      setCargando(false);
-    }
-  };
-
   useEffect(() => {
+    const cargarPendientes = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const respuesta = await fetch(
+          "http://localhost:3000/api/admin/pending-professionals",
+          {
+            headers: {
+              Authorization: "Bearer " + token,
+            },
+          },
+        );
+
+        if (respuesta.ok) {
+          const datos = await respuesta.json();
+          setPendientes(datos);
+        } else {
+          console.error("Error en la respuesta del backend:", respuesta.status);
+        }
+      } catch (error) {
+        console.error("Error al obtener profesionales:", error);
+      } finally {
+        setCargando(false);
+      }
+    };
     cargarPendientes();
   }, []);
 
