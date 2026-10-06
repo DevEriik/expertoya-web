@@ -50,7 +50,7 @@ export const AdminBackoffice = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:3000/api/admin/approve-professional/${id}`,
+        `http://localhost:3000/api/admin/professionals/${id}/approve`,
         {
           method: "PATCH",
           headers: { Authorization: `Bearer ${token}` },
@@ -69,7 +69,7 @@ export const AdminBackoffice = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:3000/api/admin/reject-professional/${id}`,
+        `http://localhost:3000/api/admin/professionals/${id}/reject`,
         {
           method: "PATCH",
           headers: {

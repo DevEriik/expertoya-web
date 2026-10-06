@@ -9,7 +9,10 @@ export const AdminRoute = ({ children }: { children: ReactNode }) => {
     return <div>Cargando...</div>;
   }
 
-  if (user?.rol !== "ADMIN") {
+  console.log("Usuario actual: ", user);
+  console.log("Rol del usuario: ", user?.rol);
+
+  if (user?.rol.toUpperCase() !== "ADMIN") {
     return <Navigate to="/" replace />;
   }
 

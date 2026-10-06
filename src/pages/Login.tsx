@@ -23,10 +23,15 @@ export const Login = () => {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Error al iniciar sesión");
+      if (!response.ok)
+        throw new Error(data.error || "Error al iniciar sesión");
 
       login(data.token, data.usuario);
-      navigate("/");
+      if (data.usuario.rol === "ADMIN") {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -47,7 +52,10 @@ export const Login = () => {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             ¿No tienes cuenta?{" "}
-            <Link to="/register" className="font-medium text-primary hover:text-primary/80 transition-colors">
+            <Link
+              to="/register"
+              className="font-medium text-primary hover:text-primary/80 transition-colors"
+            >
               Regístrate aquí
             </Link>
           </p>
@@ -60,7 +68,9 @@ export const Login = () => {
           )}
           <div className="rounded-md shadow-sm space-y-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Correo Electrónico</label>
+              <label className="block text-sm font-bold text-gray-700 mb-1">
+                Correo Electrónico
+              </label>
               <input
                 type="email"
                 required
@@ -71,7 +81,9 @@ export const Login = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Contraseña</label>
+              <label className="block text-sm font-bold text-gray-700 mb-1">
+                Contraseña
+              </label>
               <input
                 type="password"
                 required
