@@ -31,8 +31,12 @@ export const Register = () => {
       if (!response.ok) throw new Error(data.error || "Error al registrarse");
 
       navigate("/login");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Ocurrió un error inesperado");
+      }
     } finally {
       setIsLoading(false);
     }
