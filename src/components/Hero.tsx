@@ -1,12 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Sparkles, Mic, Camera } from "lucide-react";
+import { Sparkles, Mic, Camera, X } from "lucide-react";
 import { useState, useRef } from "react";
 
 export const Hero = () => {
   const [busqueda, setBusqueda] = useState("");
   const [escuchando, setEscuchando] = useState(false);
+  const [imagenSeleccionada, setImagenSeleccionada] = useState<File | null>(
+    null,
+  );
 
   const recognitionRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleDictado = () => {
     if (escuchando && recognitionRef.current) {
@@ -17,15 +21,16 @@ export const Hero = () => {
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
-
     if (!SpeechRecognition) {
       alert("Tu navegador actual no soporta el dictado por voz.");
       return;
     }
+
     const recognition = new SpeechRecognition();
     recognition.lang = "es-ES";
     recognition.continuous = true;
     recognition.interimResults = true;
+
     recognition.onstart = () => setEscuchando(true);
 
     recognition.onresult = (event: any) => {
@@ -35,8 +40,8 @@ export const Hero = () => {
         .join("");
       setBusqueda(transcript);
     };
-    recognition.onend = () => setEscuchando(false);
 
+    recognition.onend = () => setEscuchando(false);
     recognition.onerror = (event: any) => {
       console.error("Error en dictado:", event.error);
       setEscuchando(false);
@@ -45,6 +50,23 @@ export const Hero = () => {
     recognitionRef.current = recognition;
     setBusqueda("");
     recognition.start();
+  };
+
+  const abrirSelectorImagen = () => {
+    fileInputRef.current?.click();
+  };
+
+  const manejarCambioImagen = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setImagenSeleccionada(e.target.files[0]);
+    }
+  };
+
+  const quitarImagen = () => {
+    setImagenSeleccionada(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   return (
@@ -66,9 +88,27 @@ export const Hero = () => {
         </p>
 
         <div
-          className={`w-full max-w-3xl flex flex-col md:flex-row items-center gap-3 bg-white p-2.5 rounded-2xl shadow-md border transition-colors ${escuchando ? "border-primary shadow-primary/20" : "border-gray-100"}`}
+          className={`w-full max-w-3xl flex flex-col md:flex-row items-center gap-3 bg-white p-3 rounded-2xl shadow-md border transition-colors ${escuchando ? "border-primary shadow-primary/20" : "border-gray-100"}`}
         >
-          <div className="flex-1 flex items-center justify-between w-full px-2">
+          <div className="flex-1 flex items-center w-full px-2 gap-2">
+            {imagenSeleccionada && (
+              <div className="shrink-0 relative group">
+                <img
+                  src={URL.createObjectURL(imagenSeleccionada)}
+                  alt="Vista previa"
+                  className="w-12 h-12 object-cover rounded-lg border border-gray-200 shadow-sm"
+                />
+                <button
+                  type="button"
+                  onClick={quitarImagen}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 shadow-md hover:bg-red-600 transition-colors"
+                  title="Quitar imagen"
+                >
+                  <X size={14} strokeWidth={3} />
+                </button>
+              </div>
+            )}
+
             <input
               type="text"
               placeholder={
@@ -91,9 +131,18 @@ export const Hero = () => {
                 <Mic size={22} />
               </button>
 
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={manejarCambioImagen}
+                accept="image/*"
+                className="hidden"
+              />
               <button
                 type="button"
-                className="p-2 rounded-full hover:bg-gray-100 hover:text-primary transition-all"
+                onClick={abrirSelectorImagen}
+                className={`p-2 rounded-full transition-all ${imagenSeleccionada ? "bg-primary/10 text-primary" : "hover:bg-gray-100 hover:text-primary"}`}
+                title="Subir foto del problema"
               >
                 <Camera size={22} />
               </button>
