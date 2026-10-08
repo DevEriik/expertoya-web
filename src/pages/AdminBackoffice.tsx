@@ -5,7 +5,7 @@ interface ProfesionalPendiente {
   id: string;
   estado_validado: boolean;
   matricula_documento: string | null;
-  user: {
+  usuario: {
     nombre: string;
     apellido: string;
     email: string;
@@ -125,10 +125,10 @@ export const AdminBackoffice = () => {
                     className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
                   >
                     <td className="p-4 font-bold text-dark flex items-center gap-2">
-                      {prof.user.nombre} {prof.user.apellido}
+                      {prof.usuario.nombre} {prof.usuario.apellido}
                     </td>
                     <td className="p-4 text-sm text-dark/60 font-medium">
-                      {prof.user.email}
+                      {prof.usuario.email}
                     </td>
                     <td className="p-4 text-center">
                       {prof.matricula_documento ? (
