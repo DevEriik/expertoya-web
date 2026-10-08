@@ -8,6 +8,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
+import { EscrowInfo } from "./components/EscrowInfo";
+import { CallToAction } from "./components/CallToAction";
 
 const PublicHome = () => (
   <main className="min-h-screen pb-20">
@@ -15,6 +17,8 @@ const PublicHome = () => (
     <Hero />
     <Categories />
     <ProfessionalsNearYou />
+    <EscrowInfo />
+    <CallToAction />
   </main>
 );
 
