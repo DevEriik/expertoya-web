@@ -1,4 +1,4 @@
-import { ShieldCheck, Lock, Wallet, Shield } from "lucide-react";
+import { ShieldCheck, Lock, Wallet } from "lucide-react";
 
 export const EscrowInfo = () => {
   return (

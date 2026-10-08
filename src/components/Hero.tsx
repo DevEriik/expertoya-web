@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Sparkles, Mic, Camera } from "lucide-react";
 import { useState, useRef } from "react";
 

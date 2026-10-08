@@ -1,4 +1,4 @@
-import { UserPlus, Briefcase, User } from "lucide-react";
+import { UserPlus, Briefcase } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export const CallToAction = () => {
