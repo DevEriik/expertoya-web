@@ -335,8 +335,8 @@ export const AdminBackoffice = () => {
           <button
             onClick={() => setActiveTab("PENDIENTE")}
             className={`pb-3 px-5 text-sm font-bold border-b-2 transition flex items-center gap-2 ${activeTab === "PENDIENTE"
-                ? "border-primary text-primary"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+              ? "border-primary text-primary"
+              : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
           >
             Solicitantes
@@ -344,8 +344,8 @@ export const AdminBackoffice = () => {
           <button
             onClick={() => setActiveTab("APROBADO")}
             className={`pb-3 px-5 text-sm font-bold border-b-2 transition flex items-center gap-2 ${activeTab === "APROBADO"
-                ? "border-emerald-600 text-emerald-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+              ? "border-emerald-600 text-emerald-600"
+              : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
           >
             Auditados
@@ -353,8 +353,8 @@ export const AdminBackoffice = () => {
           <button
             onClick={() => setActiveTab("RECHAZADO")}
             className={`pb-3 px-5 text-sm font-bold border-b-2 transition flex items-center gap-2 ${activeTab === "RECHAZADO"
-                ? "border-rose-600 text-rose-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+              ? "border-rose-600 text-rose-600"
+              : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
           >
             Rechazados
@@ -605,14 +605,14 @@ export const AdminBackoffice = () => {
                             setRejectError(null);
                           }}
                           className={`w-full text-left p-3 rounded-xl border text-xs sm:text-sm transition-all flex items-center gap-3 ${isSelected
-                              ? "border-rose-500 bg-rose-50/70 text-rose-950 font-semibold shadow-xs ring-1 ring-rose-200"
-                              : "border-gray-200 bg-white hover:bg-gray-50/80 text-gray-700"
+                            ? "border-rose-500 bg-rose-50/70 text-rose-950 font-semibold shadow-xs ring-1 ring-rose-200"
+                            : "border-gray-200 bg-white hover:bg-gray-50/80 text-gray-700"
                             }`}
                         >
                           <div
                             className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${isSelected
-                                ? "border-rose-600 bg-rose-600"
-                                : "border-gray-300 bg-white"
+                              ? "border-rose-600 bg-rose-600"
+                              : "border-gray-300 bg-white"
                               }`}
                           >
                             {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
@@ -629,14 +629,14 @@ export const AdminBackoffice = () => {
                         setRejectError(null);
                       }}
                       className={`w-full text-left p-3 rounded-xl border text-xs sm:text-sm transition-all flex items-center gap-3 ${selectedMotivoIndex === "otro"
-                          ? "border-rose-500 bg-rose-50/70 text-rose-950 font-semibold shadow-xs ring-1 ring-rose-200"
-                          : "border-gray-200 bg-white hover:bg-gray-50/80 text-gray-700"
+                        ? "border-rose-500 bg-rose-50/70 text-rose-950 font-semibold shadow-xs ring-1 ring-rose-200"
+                        : "border-gray-200 bg-white hover:bg-gray-50/80 text-gray-700"
                         }`}
                     >
                       <div
                         className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${selectedMotivoIndex === "otro"
-                            ? "border-rose-600 bg-rose-600"
-                            : "border-gray-300 bg-white"
+                          ? "border-rose-600 bg-rose-600"
+                          : "border-gray-300 bg-white"
                           }`}
                       >
                         {selectedMotivoIndex === "otro" && (
@@ -794,8 +794,8 @@ export const AdminBackoffice = () => {
         {toastMessage && (
           <div
             className={`fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-xl border flex items-center gap-3 max-w-md animate-in slide-in-from-bottom duration-300 ${toastMessage.tipo === "success"
-                ? "bg-white border-emerald-200 text-emerald-950 shadow-emerald-100"
-                : "bg-white border-rose-200 text-rose-950 shadow-rose-100"
+              ? "bg-white border-emerald-200 text-emerald-950 shadow-emerald-100"
+              : "bg-white border-rose-200 text-rose-950 shadow-rose-100"
               }`}
           >
             {toastMessage.tipo === "success" ? (
