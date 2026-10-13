@@ -10,6 +10,7 @@ import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { EscrowInfo } from "./components/EscrowInfo";
 import { CallToAction } from "./components/CallToAction";
+import { ChatsPage } from "./pages/ChatsPage";
 
 const PublicHome = () => (
   <main className="min-h-screen pb-20">
@@ -38,6 +39,7 @@ function App() {
               </AdminRoute>
             }
           />
+          <Route path="/chats" element={<ChatsPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

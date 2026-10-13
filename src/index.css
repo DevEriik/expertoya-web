@@ -3,21 +3,37 @@
 
 @theme {
   /* Tipografía base */
-  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* Colores de Marca */
-  --color-primary: #ff8c00; /* Naranja */
-  --color-secondary: #00bfa5; /* Teal/Turquesa */
-  --color-dark: #283593; /* Índigo oscuro para textos */
-  --color-background: #fdfcf4; /* Crema para el fondo */
+  --color-primary: #ff8c00;
+  --color-primary-soft: #ffb74d;
+  --color-secondary: #00bfa5;
+  --color-secondary-bright: #33efa5;
+  --color-dark: #283593;
+  --color-background: #fdfcf4;
+
+  /* Modo Oscuro Tokens */
+  --color-dark-bg: #121826;
+  --color-dark-surface: #1F2937;
+  --color-dark-text: #fdfcf4;
 
   /* Colores Semánticos */
   --color-success: #10b981;
+  --color-success-dark: #34d399;
   --color-warning: #f59e0b;
+  --color-warning-dark: #fbbf24;
   --color-danger: #ef4444;
+  --color-danger-dark: #f87171;
 }
 
 /* Aplicamos el color de fondo y texto por defecto a toda la app */
 body {
-  @apply bg-background text-dark font-sans;
+  @apply bg-background text-dark font-sans transition-colors duration-200;
+}
+
+html.dark body,
+body.dark {
+  background-color: #121826;
+  color: #fdfcf4;
 }
