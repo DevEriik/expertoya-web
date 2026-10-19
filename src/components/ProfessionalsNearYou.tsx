@@ -34,7 +34,7 @@ export const ProfessionalsNearYou = () => {
   return (
     <section className="px-4 py-8 max-w-4xl mx-auto w-full mb-12">
       <div className="flex justify-between items-end mb-6">
-        <h2 className="text-2xl font-bold text-dark">
+        <h2 className="text-2xl font-bold text-dark dark:text-white transition-colors">
           Profesionales cerca de ti
         </h2>
         <a
@@ -49,33 +49,33 @@ export const ProfessionalsNearYou = () => {
         {professionals.map((pro) => (
           <div
             key={pro.id}
-            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col transition-transform hover:-translate-y-1 hover:shadow-md"
+            className="bg-white dark:bg-dark-surface rounded-2xl p-5 shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-800 flex flex-col transition-all hover:-translate-y-1 hover:shadow-md"
           >
             <div className="flex items-start gap-4 mb-4">
               <img
                 src={pro.image}
                 alt={pro.name}
-                className="w-14 h-14 rounded-full object-cover"
+                className="w-14 h-14 rounded-full object-cover border border-gray-100 dark:border-gray-700"
               />
 
               <div>
-                <h3 className="font-bold text-dark flex items-center gap-1">
+                <h3 className="font-bold text-dark dark:text-white flex items-center gap-1">
                   {pro.name}
                   <BadgeCheck size={18} className="text-succes" />
                 </h3>
-                <p className="text-sm text-dark/60 font-medium">{pro.trade}</p>
+                <p className="text-sm text-dark/60 dark:text-gray-400 font-medium">{pro.trade}</p>
 
                 <div className="flex items-center gap-1 mt-1 text-sm font-bold">
                   <Star size={14} className="text-warning fill-warning" />
-                  <span className="text-dark">{pro.rating}</span>
-                  <span className="text-dark/40 font-medium">
+                  <span className="text-dark dark:text-gray-200">{pro.rating}</span>
+                  <span className="text-dark/40 dark:text-gray-400 font-medium">
                     ({pro.reviews})
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-1 text-dark/60 text-sm font-medium mb-6 mt-auto">
+            <div className="flex items-center gap-1 text-dark/60 dark:text-gray-400 text-sm font-medium mb-6 mt-auto">
               <MapPin size={16} />
               {pro.location}
             </div>

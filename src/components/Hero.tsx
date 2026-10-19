@@ -71,24 +71,24 @@ export const Hero = () => {
 
   return (
     <section className="px-4 py-8 md:py-12 max-w-5xl mx-auto w-full">
-      <div className="bg-white rounded-[2rem] shadow-[0_4px_40px_-10px_rgba(0,0,0,0.03)] border border-gray-100 flex flex-col items-center text-center px-4 py-16 md:py-24 w-full">
-        <div className="inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-secondary/10 text-secondary text-sm font-bold mb-8 text-center">
+      <div className="bg-white dark:bg-dark-surface rounded-[2rem] shadow-[0_4px_40px_-10px_rgba(0,0,0,0.03)] dark:shadow-none border border-gray-100 dark:border-gray-800 transition-colors duration-300 flex flex-col items-center text-center px-4 py-16 md:py-24 w-full">
+        <div className="inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-secondary/10 dark:bg-secondary/20 text-secondary dark:text-secondary-bright text-sm font-bold mb-8 text-center border border-secondary/20 dark:border-secondary/30">
           <Sparkles size={16} className="shrink-0" />
           <span>Búsqueda con Inteligencia Artificial</span>
         </div>
 
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-dark mb-6 leading-tight">
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-dark dark:text-white mb-6 leading-tight transition-colors">
           ¿No estás seguro de a qué
           <br className="hidden md:block" /> especialista llamar?
         </h1>
 
-        <p className="text-dark/70 text-lg md:text-xl mb-12 max-w-2xl">
+        <p className="text-dark/70 dark:text-gray-300 text-lg md:text-xl mb-12 max-w-2xl font-medium transition-colors">
           Describe tu problema o sube una foto/video, y nuestra IA te conectará
           al instante con el experto exacto que necesitas.
         </p>
 
         <div
-          className={`w-full max-w-3xl flex flex-col md:flex-row items-center gap-3 bg-white p-3 rounded-2xl shadow-md border transition-colors ${escuchando ? "border-primary shadow-primary/20" : "border-gray-100"}`}
+          className={`w-full max-w-3xl flex flex-col md:flex-row items-center gap-3 bg-white dark:bg-dark-bg p-3 rounded-2xl shadow-md border transition-colors ${escuchando ? "border-primary shadow-primary/20" : "border-gray-100 dark:border-gray-700"}`}
         >
           <div className="flex-1 flex items-center w-full px-2 gap-2">
             {imagenSeleccionada && (
@@ -96,7 +96,7 @@ export const Hero = () => {
                 <img
                   src={URL.createObjectURL(imagenSeleccionada)}
                   alt="Vista previa"
-                  className="w-12 h-12 object-cover rounded-lg border border-gray-200 shadow-sm"
+                  className="w-12 h-12 object-cover rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm"
                 />
                 <button
                   type="button"
@@ -116,16 +116,16 @@ export const Hero = () => {
                   ? "Escuchando... (Vuelve a hacer click para detener)"
                   : "Ej., Tengo una pérdida de agua..."
               }
-              className="w-full pl-2 pr-2 py-3 outline-none text-dark bg-transparent font-medium text-[16px] md:text-lg placeholder:text-gray-400"
+              className="w-full pl-2 pr-2 py-3 outline-none text-dark dark:text-white bg-transparent font-medium text-[16px] md:text-lg placeholder:text-gray-400 dark:placeholder:text-gray-500"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
             />
 
-            <div className="flex items-center gap-3 md:gap-4 text-dark/40 px-2 shrink-0">
+            <div className="flex items-center gap-3 md:gap-4 text-dark/40 dark:text-gray-400 px-2 shrink-0">
               <button
                 type="button"
                 onClick={toggleDictado}
-                className={`p-2 rounded-full transition-all ${escuchando ? "bg-primary/10 text-primary animate-pulse" : "hover:bg-gray-100 hover:text-primary"}`}
+                className={`p-2 rounded-full transition-all ${escuchando ? "bg-primary/10 text-primary animate-pulse" : "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-primary"}`}
                 title="Dictado por voz"
               >
                 <Mic size={22} />
@@ -141,7 +141,7 @@ export const Hero = () => {
               <button
                 type="button"
                 onClick={abrirSelectorImagen}
-                className={`p-2 rounded-full transition-all ${imagenSeleccionada ? "bg-primary/10 text-primary" : "hover:bg-gray-100 hover:text-primary"}`}
+                className={`p-2 rounded-full transition-all ${imagenSeleccionada ? "bg-primary/10 text-primary" : "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-primary"}`}
                 title="Subir foto del problema"
               >
                 <Camera size={22} />
@@ -151,7 +151,7 @@ export const Hero = () => {
 
           <button
             type="button"
-            className="w-full md:w-auto shrink-0 px-8 py-4 bg-secondary hover:opacity-90 transition-opacity text-white font-bold rounded-xl flex items-center justify-center gap-2 text-lg"
+            className="w-full md:w-auto shrink-0 px-8 py-4 bg-secondary hover:opacity-90 transition-opacity text-white font-bold rounded-xl flex items-center justify-center gap-2 text-lg shadow-md"
           >
             <Sparkles size={20} />
             <span className="whitespace-nowrap">Preguntar a la IA</span>
