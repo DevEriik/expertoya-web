@@ -1,6 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap");
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* Tipografía base */
   --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -27,13 +29,42 @@
   --color-danger-dark: #f87171;
 }
 
-/* Aplicamos el color de fondo y texto por defecto a toda la app */
+/* Configuración base por defecto (Modo Claro) */
+html {
+  color-scheme: light;
+}
+
 body {
-  @apply bg-background text-dark font-sans transition-colors duration-200;
+  background-color: #fdfcf4;
+  color: #283593;
+  font-family: var(--font-sans);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Modo Oscuro controlado por clase */
+html.dark {
+  color-scheme: dark;
 }
 
 html.dark body,
 body.dark {
   background-color: #121826;
   color: #fdfcf4;
+}
+
+/* Icono de calendario en inputs date para modo oscuro */
+html.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
