@@ -32,6 +32,8 @@ interface ProfesionalAuditoria {
   certificado_no_deudor: string | null;
   constancia_afip: string | null;
   oficios?: { id: number; nombre_oficio: string }[];
+  es_profesional_auditado_nueva_matricula?: boolean;
+  oficios_pendientes?: { id: number; nombre_oficio: string }[];
   usuario: {
     nombre: string;
     apellido: string;
@@ -46,11 +48,15 @@ interface RejectModalData {
   id: string;
   nombre: string;
   email: string;
+  esNuevaMatricula?: boolean;
+  oficiosPendientes?: string[];
 }
 
 interface ApproveModalData {
   id: string;
   nombre: string;
+  esNuevaMatricula?: boolean;
+  oficiosPendientes?: string[];
 }
 
 const MOTIVOS_PREDETERMINADOS = [
@@ -93,7 +99,7 @@ export const AdminBackoffice = () => {
   } | null>(null);
 
   const getFileUrl = (path: string | null) => {
-    if (!path) return null;
+    if (!path || path.trim() === "" || path.includes("[object Object]")) return null;
     if (path.startsWith("http://") || path.startsWith("https://")) return path;
     const clean = path.replace(/\\/g, "/");
     return `http://localhost:3000/${clean.startsWith("/") ? clean.slice(1) : clean}`;
@@ -105,7 +111,13 @@ export const AdminBackoffice = () => {
     profesional?: string,
   ) => {
     const rawUrl = getFileUrl(path);
-    if (!rawUrl) return;
+    if (!rawUrl) {
+      setToastMessage({
+        tipo: "error",
+        texto: "El archivo adjunto no tiene una ruta válida o aún no ha sido cargado al servidor.",
+      });
+      return;
+    }
     const esPdf = rawUrl.toLowerCase().includes(".pdf");
     setImgError(false);
     const url = `${rawUrl}?t=${Date.now()}`;
@@ -160,9 +172,12 @@ export const AdminBackoffice = () => {
   }, [activeTab]);
 
   const abrirModalAprobar = (prof: ProfesionalAuditoria) => {
+    const oficiosTxt = (prof.oficios_pendientes || []).map((o) => o.nombre_oficio);
     setApproveModal({
       id: prof.id,
       nombre: `${prof.usuario.nombre} ${prof.usuario.apellido}`,
+      esNuevaMatricula: Boolean(prof.es_profesional_auditado_nueva_matricula),
+      oficiosPendientes: oficiosTxt,
     });
   };
 
@@ -182,7 +197,9 @@ export const AdminBackoffice = () => {
         setProfesionales((prev) => prev.filter((p) => p.id !== approveModal.id));
         setToastMessage({
           tipo: "success",
-          texto: `¡Perfil de ${approveModal.nombre} aprobado y validado con éxito!`,
+          texto: approveModal.esNuevaMatricula
+            ? `¡Matrícula de ${approveModal.nombre} aprobada! Se habilitó el oficio ${approveModal.oficiosPendientes?.join(", ")} y se envió la confirmación por correo.`
+            : `¡Perfil de ${approveModal.nombre} aprobado y validado con éxito!`,
         });
         setApproveModal(null);
       } else {
@@ -203,10 +220,13 @@ export const AdminBackoffice = () => {
   };
 
   const abrirModalRechazo = (prof: ProfesionalAuditoria) => {
+    const oficiosTxt = (prof.oficios_pendientes || []).map((o) => o.nombre_oficio);
     setRejectModal({
       id: prof.id,
       nombre: `${prof.usuario.nombre} ${prof.usuario.apellido}`,
       email: prof.usuario.email,
+      esNuevaMatricula: Boolean(prof.es_profesional_auditado_nueva_matricula),
+      oficiosPendientes: oficiosTxt,
     });
     setSelectedMotivoIndex(0);
     setCustomMotivo("");
@@ -248,7 +268,9 @@ export const AdminBackoffice = () => {
         setProfesionales((prev) => prev.filter((p) => p.id !== rejectModal.id));
         setToastMessage({
           tipo: "success",
-          texto: `Solicitud de ${rejectModal.nombre} rechazada. Se envió la notificación con el motivo a su correo.`,
+          texto: rejectModal.esNuevaMatricula
+            ? `Se rechazó la matrícula de ${rejectModal.nombre}. Se notificó el motivo por email y su perfil profesional se mantiene activo.`
+            : `Solicitud de ${rejectModal.nombre} rechazada. Se envió la notificación con el motivo a su correo.`,
         });
         setRejectModal(null);
       } else {
@@ -398,9 +420,19 @@ export const AdminBackoffice = () => {
                   {profesionales.map((prof) => (
                     <tr
                       key={prof.id}
-                      className="hover:bg-gray-50/50 transition-colors"
+                      className={`transition-colors ${
+                        prof.es_profesional_auditado_nueva_matricula
+                          ? "bg-amber-50/40 hover:bg-amber-50/70"
+                          : "hover:bg-gray-50/50"
+                      }`}
                     >
                       <td className="p-4 align-top">
+                        {prof.es_profesional_auditado_nueva_matricula && (
+                          <div className="mb-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-amber-500/10 to-orange-500/15 border border-orange-300 text-orange-900 rounded-lg text-xs font-bold shadow-2xs">
+                            <ShieldCheck size={14} className="text-orange-600 shrink-0" />
+                            <span>Profesional ya auditado (Nueva matrícula)</span>
+                          </div>
+                        )}
                         <div className="font-bold text-dark text-base">
                           {prof.usuario.nombre} {prof.usuario.apellido}
                         </div>
@@ -425,20 +457,41 @@ export const AdminBackoffice = () => {
                       </td>
 
                       <td className="p-4 align-top">
-                        <div className="flex flex-wrap gap-1.5 max-w-xs">
+                        <div className="flex flex-wrap gap-1.5 max-w-xs mb-2">
                           {prof.oficios && prof.oficios.length > 0 ? (
                             prof.oficios.map((oficio) => (
                               <span
                                 key={oficio.id}
-                                className="px-2 py-0.5 bg-orange-50 text-orange-700 border border-orange-200/60 rounded-md text-xs font-semibold"
+                                className="px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md text-xs font-semibold flex items-center gap-1"
                               >
+                                <Check size={11} className="text-emerald-600" />
                                 {oficio.nombre_oficio}
                               </span>
                             ))
                           ) : (
-                            <span className="text-xs text-gray-400">Sin oficios asignados</span>
+                            <span className="text-xs text-gray-400">Sin oficios previos</span>
                           )}
                         </div>
+
+                        {prof.es_profesional_auditado_nueva_matricula &&
+                          prof.oficios_pendientes &&
+                          prof.oficios_pendientes.length > 0 && (
+                            <div className="p-2 bg-orange-50 border border-orange-300 rounded-xl text-xs">
+                              <span className="font-bold text-orange-950 block text-[11px] uppercase tracking-wider mb-1">
+                                Nueva matrícula a validar:
+                              </span>
+                              <div className="flex flex-wrap gap-1">
+                                {prof.oficios_pendientes.map((o) => (
+                                  <span
+                                    key={o.id}
+                                    className="px-2 py-0.5 bg-orange-600 text-white rounded text-xs font-bold"
+                                  >
+                                    ★ {o.nombre_oficio}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                       </td>
 
                       <td className="p-4 align-top">
@@ -493,10 +546,19 @@ export const AdminBackoffice = () => {
                           )}
                           {prof.matricula_documento && (
                             <button
-                              onClick={() => abrirDocumento(prof.matricula_documento, "Matrícula Habilitante", `${prof.usuario.nombre} ${prof.usuario.apellido}`)}
-                              className="col-span-2 text-left px-2 py-1 bg-orange-50 hover:bg-orange-100 text-orange-800 font-bold rounded border border-orange-200 flex items-center gap-1"
+                              onClick={() => abrirDocumento(prof.matricula_documento, "Matrícula Habilitante (PDF)", `${prof.usuario.nombre} ${prof.usuario.apellido}`)}
+                              className={`col-span-2 text-left px-2.5 py-1.5 font-bold rounded-lg border flex items-center gap-1.5 transition ${
+                                prof.es_profesional_auditado_nueva_matricula
+                                  ? "bg-orange-100 hover:bg-orange-200 text-orange-950 border-orange-400 shadow-2xs"
+                                  : "bg-orange-50 hover:bg-orange-100 text-orange-800 border-orange-200"
+                              }`}
                             >
-                              <FileText size={12} /> Matrícula Habilitante
+                              <FileText size={13} className="text-orange-700 shrink-0" />
+                              <span>
+                                {prof.es_profesional_auditado_nueva_matricula
+                                  ? "Ver Matrícula Nueva Adjunta (PDF)"
+                                  : "Matrícula Habilitante (PDF)"}
+                              </span>
                             </button>
                           )}
                         </div>
@@ -507,10 +569,21 @@ export const AdminBackoffice = () => {
                           <div className="space-x-2 whitespace-nowrap inline-flex">
                             <button
                               onClick={() => abrirModalAprobar(prof)}
-                              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all shadow-2xs hover:shadow-xs active:scale-95"
-                              title="Aprobar legajo y activar profesional"
+                              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs hover:shadow-xs active:scale-95 ${
+                                prof.es_profesional_auditado_nueva_matricula
+                                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                                  : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80"
+                              }`}
+                              title={
+                                prof.es_profesional_auditado_nueva_matricula
+                                  ? "Validar y habilitar nueva matrícula"
+                                  : "Aprobar legajo y activar profesional"
+                              }
                             >
-                              <CheckCircle size={15} /> Aprobar
+                              <CheckCircle size={15} />
+                              {prof.es_profesional_auditado_nueva_matricula
+                                ? "Validar Matrícula"
+                                : "Aprobar"}
                             </button>
                             <button
                               onClick={() => abrirModalRechazo(prof)}
@@ -571,10 +644,17 @@ export const AdminBackoffice = () => {
                   </div>
                   <div>
                     <h3 className="font-bold text-dark text-lg leading-tight">
-                      Rechazar Legajo de Profesional
+                      {rejectModal.esNuevaMatricula
+                        ? "Rechazar Documentación de Matrícula"
+                        : "Rechazar Legajo de Profesional"}
                     </h3>
                     <p className="text-xs text-dark/60 mt-0.5">
                       Profesional: <span className="font-bold text-dark">{rejectModal.nombre}</span> ({rejectModal.email})
+                      {rejectModal.esNuevaMatricula && rejectModal.oficiosPendientes && (
+                        <span className="block text-orange-700 font-bold mt-0.5">
+                          Oficio observado: {rejectModal.oficiosPendientes.join(", ")} (su cuenta continuará activa)
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -743,20 +823,37 @@ export const AdminBackoffice = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-dark text-lg leading-tight">
-                    Aprobar Profesional
+                    {approveModal.esNuevaMatricula
+                      ? "Validar y Habilitar Matrícula"
+                      : "Aprobar Profesional"}
                   </h3>
                   <p className="text-xs text-dark/60 mt-0.5">
-                    Activar perfil para recepción de clientes
+                    {approveModal.esNuevaMatricula
+                      ? "Aprobar documentación oficial de matrícula"
+                      : "Activar perfil para recepción de clientes"}
                   </p>
                 </div>
               </div>
 
               <p className="text-xs sm:text-sm text-dark/70 mb-5 leading-relaxed">
-                ¿Confirmas que la documentación de{" "}
-                <span className="font-bold text-dark">{approveModal.nombre}</span> cumple
-                con todos los requisitos legales y fiscales? Su perfil pasará a estado{" "}
-                <strong className="text-emerald-700">Validado</strong> y recibirá el
-                correo de confirmación habilitando su cuenta.
+                {approveModal.esNuevaMatricula ? (
+                  <>
+                    ¿Confirmas que la documentación de matrícula adjuntada por{" "}
+                    <span className="font-bold text-dark">{approveModal.nombre}</span> para{" "}
+                    <strong className="text-orange-700">
+                      {approveModal.oficiosPendientes?.join(", ") || "el nuevo oficio"}
+                    </strong>{" "}
+                    es válida y auténtica? El oficio quedará habilitado de inmediato en su perfil profesional y se le enviará un correo de confirmación.
+                  </>
+                ) : (
+                  <>
+                    ¿Confirmas que la documentación de{" "}
+                    <span className="font-bold text-dark">{approveModal.nombre}</span> cumple
+                    con todos los requisitos legales y fiscales? Su perfil pasará a estado{" "}
+                    <strong className="text-emerald-700">Validado</strong> y recibirá el
+                    correo de confirmación habilitando su cuenta.
+                  </>
+                )}
               </p>
 
               <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
@@ -777,12 +874,14 @@ export const AdminBackoffice = () => {
                   {isApproving ? (
                     <>
                       <Loader2 size={15} className="animate-spin" />
-                      Aprobando...
+                      Validando...
                     </>
                   ) : (
                     <>
                       <Check size={15} />
-                      Confirmar y Activar
+                      {approveModal.esNuevaMatricula
+                        ? "Habilitar Oficio y Notificar"
+                        : "Confirmar y Activar"}
                     </>
                   )}
                 </button>
