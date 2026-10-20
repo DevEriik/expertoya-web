@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   CheckCircle,
@@ -73,7 +73,9 @@ export const AdminBackoffice = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>("PENDIENTE");
-  const [profesionales, setProfesionales] = useState<ProfesionalAuditoria[]>([]);
+  const [profesionales, setProfesionales] = useState<ProfesionalAuditoria[]>(
+    [],
+  );
   const [previewDoc, setPreviewDoc] = useState<{
     url: string;
     titulo: string;
@@ -85,21 +87,27 @@ export const AdminBackoffice = () => {
   const [imgError, setImgError] = useState<boolean>(false);
 
   const [rejectModal, setRejectModal] = useState<RejectModalData | null>(null);
-  const [selectedMotivoIndex, setSelectedMotivoIndex] = useState<number | "otro">(0);
+  const [selectedMotivoIndex, setSelectedMotivoIndex] = useState<
+    number | "otro"
+  >(0);
   const [customMotivo, setCustomMotivo] = useState<string>("");
   const [isRejecting, setIsRejecting] = useState<boolean>(false);
   const [rejectError, setRejectError] = useState<string | null>(null);
 
-  const [approveModal, setApproveModal] = useState<ApproveModalData | null>(null);
+  const [approveModal, setApproveModal] = useState<ApproveModalData | null>(
+    null,
+  );
   const [isApproving, setIsApproving] = useState<boolean>(false);
 
   const [toastMessage, setToastMessage] = useState<{
     tipo: "success" | "error";
     texto: string;
   } | null>(null);
+  const previewVersionRef = useRef(0);
 
   const getFileUrl = (path: string | null) => {
-    if (!path || path.trim() === "" || path.includes("[object Object]")) return null;
+    if (!path || path.trim() === "" || path.includes("[object Object]"))
+      return null;
     if (path.startsWith("http://") || path.startsWith("https://")) return path;
     const clean = path.replace(/\\/g, "/");
     return `http://localhost:3000/${clean.startsWith("/") ? clean.slice(1) : clean}`;
@@ -114,13 +122,15 @@ export const AdminBackoffice = () => {
     if (!rawUrl) {
       setToastMessage({
         tipo: "error",
-        texto: "El archivo adjunto no tiene una ruta válida o aún no ha sido cargado al servidor.",
+        texto:
+          "El archivo adjunto no tiene una ruta válida o aún no ha sido cargado al servidor.",
       });
       return;
     }
     const esPdf = rawUrl.toLowerCase().includes(".pdf");
     setImgError(false);
-    const url = `${rawUrl}?t=${Date.now()}`;
+    previewVersionRef.current += 1;
+    const url = `${rawUrl}?t=${previewVersionRef.current}`;
     setPreviewDoc({ url, titulo, esPdf, profesional });
   };
 
@@ -167,12 +177,18 @@ export const AdminBackoffice = () => {
     }
   };
 
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
+    // Carga inicial y recarga al cambiar de pestaña.
+    // El setState ocurre dentro de la función async de fetch.
     cargarProfesionales(activeTab);
   }, [activeTab]);
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   const abrirModalAprobar = (prof: ProfesionalAuditoria) => {
-    const oficiosTxt = (prof.oficios_pendientes || []).map((o) => o.nombre_oficio);
+    const oficiosTxt = (prof.oficios_pendientes || []).map(
+      (o) => o.nombre_oficio,
+    );
     setApproveModal({
       id: prof.id,
       nombre: `${prof.usuario.nombre} ${prof.usuario.apellido}`,
@@ -194,7 +210,9 @@ export const AdminBackoffice = () => {
         },
       );
       if (res.ok) {
-        setProfesionales((prev) => prev.filter((p) => p.id !== approveModal.id));
+        setProfesionales((prev) =>
+          prev.filter((p) => p.id !== approveModal.id),
+        );
         setToastMessage({
           tipo: "success",
           texto: approveModal.esNuevaMatricula
@@ -220,7 +238,9 @@ export const AdminBackoffice = () => {
   };
 
   const abrirModalRechazo = (prof: ProfesionalAuditoria) => {
-    const oficiosTxt = (prof.oficios_pendientes || []).map((o) => o.nombre_oficio);
+    const oficiosTxt = (prof.oficios_pendientes || []).map(
+      (o) => o.nombre_oficio,
+    );
     setRejectModal({
       id: prof.id,
       nombre: `${prof.usuario.nombre} ${prof.usuario.apellido}`,
@@ -236,15 +256,16 @@ export const AdminBackoffice = () => {
   const confirmarRechazo = async () => {
     if (!rejectModal) return;
 
-    let motivoFinal = "";
-    if (selectedMotivoIndex === "otro") {
-      if (!customMotivo.trim()) {
-        setRejectError("Por favor, ingresa el motivo del rechazo en el campo de texto.");
-        return;
-      }
-      motivoFinal = customMotivo.trim();
-    } else {
-      motivoFinal = MOTIVOS_PREDETERMINADOS[selectedMotivoIndex];
+    const motivoFinal =
+      selectedMotivoIndex === "otro"
+        ? customMotivo.trim()
+        : MOTIVOS_PREDETERMINADOS[selectedMotivoIndex];
+
+    if (!motivoFinal) {
+      setRejectError(
+        "Por favor, ingresa el motivo del rechazo en el campo de texto.",
+      );
+      return;
     }
 
     setIsRejecting(true);
@@ -275,7 +296,9 @@ export const AdminBackoffice = () => {
         setRejectModal(null);
       } else {
         const errorData = await res.json().catch(() => ({}));
-        setRejectError(errorData.error || "No se pudo rechazar la solicitud en el servidor.");
+        setRejectError(
+          errorData.error || "No se pudo rechazar la solicitud en el servidor.",
+        );
       }
     } catch (error) {
       console.error("Error al rechazar:", error);
@@ -327,7 +350,8 @@ export const AdminBackoffice = () => {
               Panel de Auditoría de Profesionales
             </h1>
             <p className="text-dark/60 mt-1">
-              Revisión de identidad, situación fiscal y matrículas para activación de cuentas
+              Revisión de identidad, situación fiscal y matrículas para
+              activación de cuentas
             </p>
           </div>
           <button
@@ -356,28 +380,31 @@ export const AdminBackoffice = () => {
         <div className="flex items-center gap-2 border-b border-gray-200 mb-6">
           <button
             onClick={() => setActiveTab("PENDIENTE")}
-            className={`pb-3 px-5 text-sm font-bold border-b-2 transition flex items-center gap-2 ${activeTab === "PENDIENTE"
-              ? "border-primary text-primary"
-              : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
+            className={`pb-3 px-5 text-sm font-bold border-b-2 transition flex items-center gap-2 ${
+              activeTab === "PENDIENTE"
+                ? "border-primary text-primary"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
           >
             Solicitantes
           </button>
           <button
             onClick={() => setActiveTab("APROBADO")}
-            className={`pb-3 px-5 text-sm font-bold border-b-2 transition flex items-center gap-2 ${activeTab === "APROBADO"
-              ? "border-emerald-600 text-emerald-600"
-              : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
+            className={`pb-3 px-5 text-sm font-bold border-b-2 transition flex items-center gap-2 ${
+              activeTab === "APROBADO"
+                ? "border-emerald-600 text-emerald-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
           >
             Auditados
           </button>
           <button
             onClick={() => setActiveTab("RECHAZADO")}
-            className={`pb-3 px-5 text-sm font-bold border-b-2 transition flex items-center gap-2 ${activeTab === "RECHAZADO"
-              ? "border-rose-600 text-rose-600"
-              : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
+            className={`pb-3 px-5 text-sm font-bold border-b-2 transition flex items-center gap-2 ${
+              activeTab === "RECHAZADO"
+                ? "border-rose-600 text-rose-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
           >
             Rechazados
           </button>
@@ -392,14 +419,20 @@ export const AdminBackoffice = () => {
             <div className="p-12 text-center">
               <CheckCircle className="mx-auto text-success mb-3" size={40} />
               <p className="text-gray-700 font-bold text-lg">
-                {activeTab === "PENDIENTE" && "¡Al día! No hay profesionales pendientes de validación."}
-                {activeTab === "APROBADO" && "Aún no hay profesionales auditados y aprobados."}
-                {activeTab === "RECHAZADO" && "No hay profesionales en el historial de rechazados."}
+                {activeTab === "PENDIENTE" &&
+                  "¡Al día! No hay profesionales pendientes de validación."}
+                {activeTab === "APROBADO" &&
+                  "Aún no hay profesionales auditados y aprobados."}
+                {activeTab === "RECHAZADO" &&
+                  "No hay profesionales en el historial de rechazados."}
               </p>
               <p className="text-gray-400 text-sm mt-1">
-                {activeTab === "PENDIENTE" && "Todas las solicitudes recibidas han sido auditadas."}
-                {activeTab === "APROBADO" && "Los perfiles aprobados aparecerán aquí."}
-                {activeTab === "RECHAZADO" && "El registro de legajos rechazados aparecerá aquí con sus motivos."}
+                {activeTab === "PENDIENTE" &&
+                  "Todas las solicitudes recibidas han sido auditadas."}
+                {activeTab === "APROBADO" &&
+                  "Los perfiles aprobados aparecerán aquí."}
+                {activeTab === "RECHAZADO" &&
+                  "El registro de legajos rechazados aparecerá aquí con sus motivos."}
               </p>
             </div>
           ) : (
@@ -412,7 +445,11 @@ export const AdminBackoffice = () => {
                     <th className="p-4 font-bold">Oficios</th>
                     <th className="p-4 font-bold">Documentación Adjunta</th>
                     <th className="p-4 font-bold text-right">
-                      {activeTab === "PENDIENTE" ? "Acciones" : activeTab === "APROBADO" ? "Estado" : "Motivo de Rechazo"}
+                      {activeTab === "PENDIENTE"
+                        ? "Acciones"
+                        : activeTab === "APROBADO"
+                          ? "Estado"
+                          : "Motivo de Rechazo"}
                     </th>
                   </tr>
                 </thead>
@@ -429,8 +466,13 @@ export const AdminBackoffice = () => {
                       <td className="p-4 align-top">
                         {prof.es_profesional_auditado_nueva_matricula && (
                           <div className="mb-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-amber-500/10 to-orange-500/15 border border-orange-300 text-orange-900 rounded-lg text-xs font-bold shadow-2xs">
-                            <ShieldCheck size={14} className="text-orange-600 shrink-0" />
-                            <span>Profesional ya auditado (Nueva matrícula)</span>
+                            <ShieldCheck
+                              size={14}
+                              className="text-orange-600 shrink-0"
+                            />
+                            <span>
+                              Profesional ya auditado (Nueva matrícula)
+                            </span>
                           </div>
                         )}
                         <div className="font-bold text-dark text-base">
@@ -452,7 +494,9 @@ export const AdminBackoffice = () => {
                             {prof.cuit}
                           </span>
                         ) : (
-                          <span className="text-xs text-gray-400">Sin CUIT</span>
+                          <span className="text-xs text-gray-400">
+                            Sin CUIT
+                          </span>
                         )}
                       </td>
 
@@ -469,7 +513,9 @@ export const AdminBackoffice = () => {
                               </span>
                             ))
                           ) : (
-                            <span className="text-xs text-gray-400">Sin oficios previos</span>
+                            <span className="text-xs text-gray-400">
+                              Sin oficios previos
+                            </span>
                           )}
                         </div>
 
@@ -498,7 +544,13 @@ export const AdminBackoffice = () => {
                         <div className="grid grid-cols-2 gap-1.5 text-xs">
                           {prof.dni_frente && (
                             <button
-                              onClick={() => abrirDocumento(prof.dni_frente, "DNI Frente", `${prof.usuario.nombre} ${prof.usuario.apellido}`)}
+                              onClick={() =>
+                                abrirDocumento(
+                                  prof.dni_frente,
+                                  "DNI Frente",
+                                  `${prof.usuario.nombre} ${prof.usuario.apellido}`,
+                                )
+                              }
                               className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-blue-600 font-medium rounded border border-gray-200 flex items-center gap-1"
                             >
                               <FileText size={12} /> DNI Frente
@@ -506,7 +558,13 @@ export const AdminBackoffice = () => {
                           )}
                           {prof.dni_dorso && (
                             <button
-                              onClick={() => abrirDocumento(prof.dni_dorso, "DNI Dorso", `${prof.usuario.nombre} ${prof.usuario.apellido}`)}
+                              onClick={() =>
+                                abrirDocumento(
+                                  prof.dni_dorso,
+                                  "DNI Dorso",
+                                  `${prof.usuario.nombre} ${prof.usuario.apellido}`,
+                                )
+                              }
                               className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-blue-600 font-medium rounded border border-gray-200 flex items-center gap-1"
                             >
                               <FileText size={12} /> DNI Dorso
@@ -514,7 +572,13 @@ export const AdminBackoffice = () => {
                           )}
                           {prof.selfie_biometrica && (
                             <button
-                              onClick={() => abrirDocumento(prof.selfie_biometrica, "Selfie Biométrica", `${prof.usuario.nombre} ${prof.usuario.apellido}`)}
+                              onClick={() =>
+                                abrirDocumento(
+                                  prof.selfie_biometrica,
+                                  "Selfie Biométrica",
+                                  `${prof.usuario.nombre} ${prof.usuario.apellido}`,
+                                )
+                              }
                               className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-blue-600 font-medium rounded border border-gray-200 flex items-center gap-1"
                             >
                               <User size={12} /> Selfie
@@ -522,7 +586,13 @@ export const AdminBackoffice = () => {
                           )}
                           {prof.constancia_afip && (
                             <button
-                              onClick={() => abrirDocumento(prof.constancia_afip, "Constancia AFIP", `${prof.usuario.nombre} ${prof.usuario.apellido}`)}
+                              onClick={() =>
+                                abrirDocumento(
+                                  prof.constancia_afip,
+                                  "Constancia AFIP",
+                                  `${prof.usuario.nombre} ${prof.usuario.apellido}`,
+                                )
+                              }
                               className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-emerald-700 font-medium rounded border border-gray-200 flex items-center gap-1"
                             >
                               <FileText size={12} /> AFIP
@@ -530,7 +600,13 @@ export const AdminBackoffice = () => {
                           )}
                           {prof.antecedentes_penales && (
                             <button
-                              onClick={() => abrirDocumento(prof.antecedentes_penales, "Antecedentes Penales", `${prof.usuario.nombre} ${prof.usuario.apellido}`)}
+                              onClick={() =>
+                                abrirDocumento(
+                                  prof.antecedentes_penales,
+                                  "Antecedentes Penales",
+                                  `${prof.usuario.nombre} ${prof.usuario.apellido}`,
+                                )
+                              }
                               className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-purple-700 font-medium rounded border border-gray-200 flex items-center gap-1"
                             >
                               <FileText size={12} /> Antecedentes
@@ -538,7 +614,13 @@ export const AdminBackoffice = () => {
                           )}
                           {prof.certificado_no_deudor && (
                             <button
-                              onClick={() => abrirDocumento(prof.certificado_no_deudor, "No Deudor Alimentario", `${prof.usuario.nombre} ${prof.usuario.apellido}`)}
+                              onClick={() =>
+                                abrirDocumento(
+                                  prof.certificado_no_deudor,
+                                  "No Deudor Alimentario",
+                                  `${prof.usuario.nombre} ${prof.usuario.apellido}`,
+                                )
+                              }
                               className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-purple-700 font-medium rounded border border-gray-200 flex items-center gap-1"
                             >
                               <FileText size={12} /> No Deudor
@@ -546,14 +628,23 @@ export const AdminBackoffice = () => {
                           )}
                           {prof.matricula_documento && (
                             <button
-                              onClick={() => abrirDocumento(prof.matricula_documento, "Matrícula Habilitante (PDF)", `${prof.usuario.nombre} ${prof.usuario.apellido}`)}
+                              onClick={() =>
+                                abrirDocumento(
+                                  prof.matricula_documento,
+                                  "Matrícula Habilitante (PDF)",
+                                  `${prof.usuario.nombre} ${prof.usuario.apellido}`,
+                                )
+                              }
                               className={`col-span-2 text-left px-2.5 py-1.5 font-bold rounded-lg border flex items-center gap-1.5 transition ${
                                 prof.es_profesional_auditado_nueva_matricula
                                   ? "bg-orange-100 hover:bg-orange-200 text-orange-950 border-orange-400 shadow-2xs"
                                   : "bg-orange-50 hover:bg-orange-100 text-orange-800 border-orange-200"
                               }`}
                             >
-                              <FileText size={13} className="text-orange-700 shrink-0" />
+                              <FileText
+                                size={13}
+                                className="text-orange-700 shrink-0"
+                              />
                               <span>
                                 {prof.es_profesional_auditado_nueva_matricula
                                   ? "Ver Matrícula Nueva Adjunta (PDF)"
@@ -602,7 +693,9 @@ export const AdminBackoffice = () => {
                             </span>
                             {prof.fecha_validacion && (
                               <span className="text-[11px] text-gray-400 mt-1">
-                                {new Date(prof.fecha_validacion).toLocaleDateString()}
+                                {new Date(
+                                  prof.fecha_validacion,
+                                ).toLocaleDateString()}
                               </span>
                             )}
                           </div>
@@ -614,8 +707,11 @@ export const AdminBackoffice = () => {
                               <XCircle size={14} /> Rechazado
                             </span>
                             <div className="p-2.5 bg-rose-50/80 border border-rose-200 rounded-xl text-xs text-rose-950 font-medium">
-                              <strong className="block text-[11px] uppercase tracking-wider text-rose-700 mb-0.5">Motivo del rechazo:</strong>
-                              {prof.motivo_rechazo || "Documentación no legible o incompleta"}
+                              <strong className="block text-[11px] uppercase tracking-wider text-rose-700 mb-0.5">
+                                Motivo del rechazo:
+                              </strong>
+                              {prof.motivo_rechazo ||
+                                "Documentación no legible o incompleta"}
                             </div>
                           </div>
                         )}
@@ -649,12 +745,19 @@ export const AdminBackoffice = () => {
                         : "Rechazar Legajo de Profesional"}
                     </h3>
                     <p className="text-xs text-dark/60 mt-0.5">
-                      Profesional: <span className="font-bold text-dark">{rejectModal.nombre}</span> ({rejectModal.email})
-                      {rejectModal.esNuevaMatricula && rejectModal.oficiosPendientes && (
-                        <span className="block text-orange-700 font-bold mt-0.5">
-                          Oficio observado: {rejectModal.oficiosPendientes.join(", ")} (su cuenta continuará activa)
-                        </span>
-                      )}
+                      Profesional:{" "}
+                      <span className="font-bold text-dark">
+                        {rejectModal.nombre}
+                      </span>{" "}
+                      ({rejectModal.email})
+                      {rejectModal.esNuevaMatricula &&
+                        rejectModal.oficiosPendientes && (
+                          <span className="block text-orange-700 font-bold mt-0.5">
+                            Oficio observado:{" "}
+                            {rejectModal.oficiosPendientes.join(", ")} (su
+                            cuenta continuará activa)
+                          </span>
+                        )}
                     </p>
                   </div>
                 </div>
@@ -684,18 +787,22 @@ export const AdminBackoffice = () => {
                             setSelectedMotivoIndex(idx);
                             setRejectError(null);
                           }}
-                          className={`w-full text-left p-3 rounded-xl border text-xs sm:text-sm transition-all flex items-center gap-3 ${isSelected
-                            ? "border-rose-500 bg-rose-50/70 text-rose-950 font-semibold shadow-xs ring-1 ring-rose-200"
-                            : "border-gray-200 bg-white hover:bg-gray-50/80 text-gray-700"
-                            }`}
+                          className={`w-full text-left p-3 rounded-xl border text-xs sm:text-sm transition-all flex items-center gap-3 ${
+                            isSelected
+                              ? "border-rose-500 bg-rose-50/70 text-rose-950 font-semibold shadow-xs ring-1 ring-rose-200"
+                              : "border-gray-200 bg-white hover:bg-gray-50/80 text-gray-700"
+                          }`}
                         >
                           <div
-                            className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${isSelected
-                              ? "border-rose-600 bg-rose-600"
-                              : "border-gray-300 bg-white"
-                              }`}
+                            className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                              isSelected
+                                ? "border-rose-600 bg-rose-600"
+                                : "border-gray-300 bg-white"
+                            }`}
                           >
-                            {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                            {isSelected && (
+                              <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                            )}
                           </div>
                           <span className="flex-1">{motivo}</span>
                         </button>
@@ -708,22 +815,26 @@ export const AdminBackoffice = () => {
                         setSelectedMotivoIndex("otro");
                         setRejectError(null);
                       }}
-                      className={`w-full text-left p-3 rounded-xl border text-xs sm:text-sm transition-all flex items-center gap-3 ${selectedMotivoIndex === "otro"
-                        ? "border-rose-500 bg-rose-50/70 text-rose-950 font-semibold shadow-xs ring-1 ring-rose-200"
-                        : "border-gray-200 bg-white hover:bg-gray-50/80 text-gray-700"
-                        }`}
+                      className={`w-full text-left p-3 rounded-xl border text-xs sm:text-sm transition-all flex items-center gap-3 ${
+                        selectedMotivoIndex === "otro"
+                          ? "border-rose-500 bg-rose-50/70 text-rose-950 font-semibold shadow-xs ring-1 ring-rose-200"
+                          : "border-gray-200 bg-white hover:bg-gray-50/80 text-gray-700"
+                      }`}
                     >
                       <div
-                        className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${selectedMotivoIndex === "otro"
-                          ? "border-rose-600 bg-rose-600"
-                          : "border-gray-300 bg-white"
-                          }`}
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                          selectedMotivoIndex === "otro"
+                            ? "border-rose-600 bg-rose-600"
+                            : "border-gray-300 bg-white"
+                        }`}
                       >
                         {selectedMotivoIndex === "otro" && (
                           <div className="w-1.5 h-1.5 rounded-full bg-white" />
                         )}
                       </div>
-                      <span className="flex-1 font-medium">Otro motivo (escribir desde cero)</span>
+                      <span className="flex-1 font-medium">
+                        Otro motivo (escribir desde cero)
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -749,19 +860,27 @@ export const AdminBackoffice = () => {
 
                 <div className="bg-gray-50/80 border border-gray-200/90 rounded-2xl p-4 text-xs text-dark/70">
                   <div className="font-bold text-gray-500 uppercase tracking-wider text-[10px] mb-2 flex items-center justify-between">
-                    <span>Vista previa del correo que recibirá el profesional</span>
-                    <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-mono text-[10px]">ExpertoYa Mailer</span>
+                    <span>
+                      Vista previa del correo que recibirá el profesional
+                    </span>
+                    <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-mono text-[10px]">
+                      ExpertoYa Mailer
+                    </span>
                   </div>
                   <div className="bg-white border-l-4 border-rose-500 rounded-r-xl p-3.5 shadow-2xs">
-                    <p className="font-bold text-gray-800 text-xs">Motivo del rechazo:</p>
+                    <p className="font-bold text-gray-800 text-xs">
+                      Motivo del rechazo:
+                    </p>
                     <p className="text-blue-900 font-semibold text-xs mt-1 leading-relaxed">
                       {selectedMotivoIndex === "otro"
-                        ? customMotivo.trim() || "(Escribe el motivo en el campo superior...)"
+                        ? customMotivo.trim() ||
+                          "(Escribe el motivo en el campo superior...)"
                         : MOTIVOS_PREDETERMINADOS[selectedMotivoIndex]}
                     </p>
                   </div>
                   <p className="text-[11px] text-gray-400 mt-2 italic">
-                    * El resto del formato del correo se mantiene intacto con el diseño oficial de ExpertoYa.
+                    * El resto del formato del correo se mantiene intacto con el
+                    diseño oficial de ExpertoYa.
                   </p>
                 </div>
 
@@ -839,19 +958,28 @@ export const AdminBackoffice = () => {
                 {approveModal.esNuevaMatricula ? (
                   <>
                     ¿Confirmas que la documentación de matrícula adjuntada por{" "}
-                    <span className="font-bold text-dark">{approveModal.nombre}</span> para{" "}
+                    <span className="font-bold text-dark">
+                      {approveModal.nombre}
+                    </span>{" "}
+                    para{" "}
                     <strong className="text-orange-700">
-                      {approveModal.oficiosPendientes?.join(", ") || "el nuevo oficio"}
+                      {approveModal.oficiosPendientes?.join(", ") ||
+                        "el nuevo oficio"}
                     </strong>{" "}
-                    es válida y auténtica? El oficio quedará habilitado de inmediato en su perfil profesional y se le enviará un correo de confirmación.
+                    es válida y auténtica? El oficio quedará habilitado de
+                    inmediato en su perfil profesional y se le enviará un correo
+                    de confirmación.
                   </>
                 ) : (
                   <>
                     ¿Confirmas que la documentación de{" "}
-                    <span className="font-bold text-dark">{approveModal.nombre}</span> cumple
-                    con todos los requisitos legales y fiscales? Su perfil pasará a estado{" "}
-                    <strong className="text-emerald-700">Validado</strong> y recibirá el
-                    correo de confirmación habilitando su cuenta.
+                    <span className="font-bold text-dark">
+                      {approveModal.nombre}
+                    </span>{" "}
+                    cumple con todos los requisitos legales y fiscales? Su
+                    perfil pasará a estado{" "}
+                    <strong className="text-emerald-700">Validado</strong> y
+                    recibirá el correo de confirmación habilitando su cuenta.
                   </>
                 )}
               </p>
@@ -892,17 +1020,20 @@ export const AdminBackoffice = () => {
 
         {toastMessage && (
           <div
-            className={`fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-xl border flex items-center gap-3 max-w-md animate-in slide-in-from-bottom duration-300 ${toastMessage.tipo === "success"
-              ? "bg-white border-emerald-200 text-emerald-950 shadow-emerald-100"
-              : "bg-white border-rose-200 text-rose-950 shadow-rose-100"
-              }`}
+            className={`fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-xl border flex items-center gap-3 max-w-md animate-in slide-in-from-bottom duration-300 ${
+              toastMessage.tipo === "success"
+                ? "bg-white border-emerald-200 text-emerald-950 shadow-emerald-100"
+                : "bg-white border-rose-200 text-rose-950 shadow-rose-100"
+            }`}
           >
             {toastMessage.tipo === "success" ? (
               <CheckCircle size={20} className="text-emerald-600 shrink-0" />
             ) : (
               <XCircle size={20} className="text-rose-600 shrink-0" />
             )}
-            <p className="text-xs font-semibold flex-1 leading-snug">{toastMessage.texto}</p>
+            <p className="text-xs font-semibold flex-1 leading-snug">
+              {toastMessage.texto}
+            </p>
             <button
               onClick={() => setToastMessage(null)}
               className="text-gray-400 hover:text-dark p-1 rounded-md"
@@ -959,8 +1090,13 @@ export const AdminBackoffice = () => {
                   />
                 ) : imgError ? (
                   <div className="p-8 text-center text-gray-500 flex flex-col items-center gap-2">
-                    <p className="font-bold text-gray-800">No se pudo cargar la imagen del documento.</p>
-                    <p className="text-xs text-gray-400">Verifica que el archivo exista en el servidor o utiliza el botón superior para abrirlo en una pestaña nueva.</p>
+                    <p className="font-bold text-gray-800">
+                      No se pudo cargar la imagen del documento.
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Verifica que el archivo exista en el servidor o utiliza el
+                      botón superior para abrirlo en una pestaña nueva.
+                    </p>
                   </div>
                 ) : (
                   <img
