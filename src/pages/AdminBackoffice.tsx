@@ -103,7 +103,6 @@ export const AdminBackoffice = () => {
     tipo: "success" | "error";
     texto: string;
   } | null>(null);
-
   const previewVersionRef = useRef(0);
 
   const getFileUrl = (path: string | null) => {

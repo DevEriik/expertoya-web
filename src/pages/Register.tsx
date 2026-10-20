@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Logo } from "../components/Logo";
 
 export const Register = () => {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const defaultRol = searchParams.get("rol") === "PROFESIONAL" ? "PROFESIONAL" : "CLIENTE";
   const [formData, setFormData] = useState({
     nombre: "",
     apellido: "",
@@ -10,7 +13,7 @@ export const Register = () => {
     telefono: "",
     password: "",
     fecha_nacimiento: "",
-    rol: "CLIENTE",
+    rol: defaultRol,
   });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -75,7 +78,7 @@ export const Register = () => {
               <span>{error}</span>
             </div>
           )}
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-dark/80 dark:text-gray-200 mb-1">Nombre</label>
@@ -95,7 +98,15 @@ export const Register = () => {
             </div>
             <div>
               <label className="block text-sm font-bold text-dark/80 dark:text-gray-200 mb-1">Fecha de Nacimiento</label>
-              <input type="date" name="fecha_nacimiento" required onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all sm:text-sm dark:[color-scheme:dark] cursor-pointer" />
+              <input
+                type="date"
+                name="fecha_nacimiento"
+                required
+                max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split("T")[0]}
+                onChange={handleChange}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all sm:text-sm cursor-pointer"
+              />
+
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-bold text-dark/80 dark:text-gray-200 mb-1">Contraseña</label>

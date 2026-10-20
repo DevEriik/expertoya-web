@@ -16,19 +16,20 @@ export const CallToAction = () => {
 
         <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
           <Link
-            to="/register"
+            to="/register?rol=CLIENTE"
             className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-bold py-4 px-8 rounded-xl transition-all hover:scale-105 shadow-md shadow-primary/20 text-lg"
           >
             <UserPlus size={22} />
             Soy Cliente
           </Link>
           <Link
-            to="/register"
+            to="/register?rol=PROFESIONAL"
             className="flex items-center justify-center gap-2 bg-white dark:bg-dark-bg hover:bg-gray-50 dark:hover:bg-gray-800 text-dark dark:text-white font-bold py-4 px-8 rounded-xl transition-all hover:scale-105 shadow-md border border-transparent dark:border-gray-700 text-lg"
           >
             <Briefcase size={22} />
             Soy Profesional
           </Link>
+
         </div>
       </div>
     </section>
