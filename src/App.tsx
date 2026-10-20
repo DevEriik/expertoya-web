@@ -13,6 +13,7 @@ import { ResetPassword } from "./pages/ResetPassword";
 import { EscrowInfo } from "./components/EscrowInfo";
 import { CallToAction } from "./components/CallToAction";
 import { ChatsPage } from "./pages/ChatsPage";
+import { ProfessionalProfile } from "./pages/ProfessionalProfile";
 
 const PublicHome = () => (
   <main className="min-h-screen pb-20 bg-background dark:bg-dark-bg transition-colors duration-200">
@@ -35,6 +36,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/profesionales/:id" element={<ProfessionalProfile />} />
           <Route
             path="/admin"
             element={

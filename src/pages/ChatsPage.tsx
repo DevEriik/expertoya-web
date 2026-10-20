@@ -23,7 +23,7 @@ export const ChatsPage = () => {
   );
 
   useEffect(() => {
-    // Actualizar chats si cambia el rol
+    // Sincroniza los chats mock cuando cambia el rol autenticado.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setChats(activeRole === "PROFESIONAL" ? PRO_CHATS : CLIENT_CHATS);
   }, [activeRole]);
