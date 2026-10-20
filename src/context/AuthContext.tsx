@@ -45,13 +45,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(userData);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    const currentToken = localStorage.getItem("token");
+    if (currentToken) {
+      try {
+        await fetch("http://localhost:3000/api/auth/logout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentToken}`,
+          },
+        });
+      } catch (err) {
+        console.warn("No se pudo notificar el logout al servidor:", err);
+      }
+    }
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("rol");
     setToken(null);
     setUser(null);
   };
+
 
   return (
     <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
