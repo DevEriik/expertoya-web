@@ -24,6 +24,9 @@ const calcularDistanciaKm = (
   return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
+const RADIOS_DISPONIBLES = [5, 10, 20, 50] as const;
+const RADIO_KM_POR_DEFECTO = 10;
+
 export const ProfessionalsNearYou = () => {
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -35,6 +38,7 @@ export const ProfessionalsNearYou = () => {
   const [buscandoUbicacion, setBuscandoUbicacion] = useState(false);
   const [errorUbicacion, setErrorUbicacion] = useState<string | null>(null);
   const [modoCercania, setModoCercania] = useState(false);
+  const [radioKm, setRadioKm] = useState<number>(RADIO_KM_POR_DEFECTO);
   useEffect(() => {
     const controller = new AbortController();
 
@@ -189,11 +193,11 @@ export const ProfessionalsNearYou = () => {
     });
 
   const profesionalesOrdenados = modoCercania
-    ? [...profesionalesConDistancia].sort((a, b) => {
-        if (a.distanciaKm == null) return 1;
-        if (b.distanciaKm == null) return -1;
-        return a.distanciaKm - b.distanciaKm;
-      })
+    ? profesionalesConDistancia
+        .filter((pro) => pro.distanciaKm != null && pro.distanciaKm <= radioKm)
+        .sort(
+          (a, b) => (a.distanciaKm ?? Infinity) - (b.distanciaKm ?? Infinity),
+        )
     : profesionalesConDistancia;
 
   return (
@@ -203,6 +207,23 @@ export const ProfessionalsNearYou = () => {
           Profesionales cerca de ti
         </h2>
         <div className="flex items-center gap-3">
+          {modoCercania && (
+            <label className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+              <span className="hidden sm:inline">Radio:</span>
+              <select
+                value={radioKm}
+                onChange={(e) => setRadioKm(Number(e.target.value))}
+                className="px-2 py-1.5 rounded-lg border text-sm font-semibold bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-dark dark:text-gray-200 focus:outline-none focus:border-primary"
+              >
+                {RADIOS_DISPONIBLES.map((km) => (
+                  <option key={km} value={km}>
+                    {km} km
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
           <button
             type="button"
             onClick={
@@ -238,11 +259,33 @@ export const ProfessionalsNearYou = () => {
         </p>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {profesionalesOrdenados.map((pro) => (
-          <ProfessionalCard key={pro.id} profesional={pro} />
-        ))}
-      </div>
+      {modoCercania && profesionalesOrdenados.length > 0 && (
+        <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+          Mostrando profesionales a menos de {radioKm} km de tu ubicación.
+        </p>
+      )}
+
+      {profesionalesOrdenados.length === 0 ? (
+        <div className="p-12 text-center bg-gray-50 dark:bg-gray-800/40 rounded-xl">
+          <p className="text-gray-500 dark:text-gray-400 font-medium">
+            No encontramos profesionales a menos de {radioKm} km de tu
+            ubicación.
+          </p>
+          <button
+            type="button"
+            onClick={() => setModoCercania(false)}
+            className="mt-4 text-primary font-bold hover:underline text-sm"
+          >
+            Ver todos los profesionales
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {profesionalesOrdenados.map((pro) => (
+            <ProfessionalCard key={pro.id} profesional={pro} />
+          ))}
+        </div>
+      )}
 
       <div className="mt-6 text-center md:hidden">
         <a href="#" className="text-primary font-bold hover:underline">
