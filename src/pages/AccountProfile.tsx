@@ -57,7 +57,7 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
     descripcion_perfil: "",
     disponible: true,
     rol: user?.rol || "CLIENTE",
-    oficios: [] as any[],
+    oficios: [] as Array<{ id: number; nombre_oficio?: string; nombre?: string }>,
     oficios_pendientes_ids: [] as number[],
     matricula_documento: null as string | null,
   });
@@ -132,11 +132,14 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
   }, []);
 
   useEffect(() => {
-    fetchProfileFromDB();
-    loadServicesData();
+    const initData = async () => {
+      await fetchProfileFromDB();
+      await loadServicesData();
+    };
+    void initData();
 
     const handleServicesChanged = () => {
-      loadServicesData();
+      void loadServicesData();
     };
 
     window.addEventListener("servicesChanged", handleServicesChanged);
@@ -184,10 +187,11 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
           : "¡Servicio publicado con éxito en tu catálogo!",
       });
       await loadServicesData();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "No se pudo guardar el servicio.";
       setToastMessage({
         type: "error",
-        text: err.message || "No se pudo guardar el servicio.",
+        text: msg,
       });
     }
   };
@@ -202,10 +206,11 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
           : `Servicio "${service.titulo_servicio}" activado.`,
       });
       await loadServicesData();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "No se pudo cambiar el estado del servicio.";
       setToastMessage({
         type: "error",
-        text: err.message || "No se pudo cambiar el estado del servicio.",
+        text: msg,
       });
     }
   };
@@ -222,10 +227,11 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
       setServiceToDelete(null);
       setSelectedServiceDetail(null);
       await loadServicesData();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "No se pudo eliminar el servicio.";
       setToastMessage({
         type: "error",
-        text: err.message || "No se pudo eliminar el servicio.",
+        text: msg,
       });
     } finally {
       setIsDeleting(false);

@@ -186,10 +186,11 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
       if (timerRef.current) clearInterval(timerRef.current);
 
       if (!response.ok) {
-        let errorData: any = {};
+        let errorData: { error?: string } = {};
         try {
           errorData = await response.json();
-        } catch {
+        } catch (parseErr) {
+          console.warn("No se pudo parsear el error:", parseErr);
         }
 
         if (response.status === 400) {
@@ -221,19 +222,20 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
       setSuccessNotice(
         "¡Propuesta comercial generada con éxito! Puedes revisarla y editarla libremente antes de guardar."
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       clearTimeout(timeoutId);
       if (timerRef.current) clearInterval(timerRef.current);
 
-      if (err.name === "AbortError") {
+      if (err instanceof Error && err.name === "AbortError") {
         setErrorMessage(
           "Tiempo de espera agotado (límite de 10 segundos excedido). La IA no respondió a tiempo; intenta nuevamente."
         );
       } else {
-        setErrorMessage(
-          err.message ||
-          "Error de comunicación al intentar generar la descripción comercial."
-        );
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Error de comunicación al intentar generar la descripción comercial.";
+        setErrorMessage(msg);
       }
     } finally {
       setIsGenerating(false);

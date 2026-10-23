@@ -22,12 +22,15 @@ export const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({
   onDelete,
 }) => {
   const [selectedPhotoIndex, setSelectedPhotoIndex] = React.useState(0);
+  const [prevServiceId, setPrevServiceId] = React.useState(service?.id);
+
+  if (service?.id !== prevServiceId) {
+    setPrevServiceId(service?.id);
+    setSelectedPhotoIndex(0);
+  }
+
   const handleEdit = onEditService || onEdit;
   const handleDelete = onDeleteService || onDelete;
-
-  useEffect(() => {
-    setSelectedPhotoIndex(0);
-  }, [service]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
