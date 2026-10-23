@@ -148,7 +148,7 @@ const EditProfileFormContent: React.FC<EditProfileFormContentProps> = ({
           if (Array.isArray(dataOficios) && dataOficios.length > 0) {
             const merged: OficioItem[] = dataOficios.map(
               (o: { id: number; nombre_oficio?: string; nombre?: string; descripcion_oficio?: string }) => {
-                const fallback = OFICIOS_CATALOGO.find((c) => c.id === Number(o.id));
+                const fallback = OFICIOS_CATALOGO.find((c: OficioItem) => c.id === Number(o.id));
                 return {
                   id: Number(o.id),
                   nombre: o.nombre_oficio || o.nombre || fallback?.nombre || `Oficio ${o.id}`,
@@ -762,7 +762,7 @@ const EditProfileFormContent: React.FC<EditProfileFormContentProps> = ({
               Sugerencias rápidas:
             </span>
             <div className="flex flex-wrap gap-1.5">
-              {ZONAS_SUGERIDAS.map((zona) => {
+              {ZONAS_SUGERIDAS.map((zona: string) => {
                 const isIncluded = zonas.toLowerCase().includes(zona.toLowerCase());
                 return (
                   <button
