@@ -14,6 +14,7 @@ import { EscrowInfo } from "./components/EscrowInfo";
 import { CallToAction } from "./components/CallToAction";
 import { ChatsPage } from "./pages/ChatsPage";
 import { ProfessionalProfile } from "./pages/ProfessionalProfile";
+import { AccountProfile } from "./pages/AccountProfile";
 
 const PublicHome = () => (
   <main className="min-h-screen pb-20 bg-background dark:bg-dark-bg transition-colors duration-200">
@@ -46,6 +47,16 @@ function App() {
             }
           />
           <Route path="/chats" element={<ChatsPage />} />
+          <Route path="/perfil" element={<AccountProfile />} />
+          <Route path="/cuenta" element={<AccountProfile />} />
+          <Route
+            path="/crear-servicio"
+            element={<AccountProfile autoOpenCreateModal={true} />}
+          />
+          <Route
+            path="/nuevo-servicio"
+            element={<AccountProfile autoOpenCreateModal={true} />}
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
