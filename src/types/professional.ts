@@ -28,7 +28,7 @@ export type ProfessionalWithDistance = Professional & {
 
 export interface ProfessionalService {
   id: string;
-  profesional_id: string;
+  profesional_id?: string;
   oficio_id: number;
   nombre_oficio?: string;
   titulo_servicio: string;
@@ -38,3 +38,5 @@ export interface ProfessionalService {
   fotos_servicio: string[];
   servicio_activo: boolean;
 }
+
+export const PROFESSIONAL_SERVICES_STORAGE_KEY = "expertoya_user_services";

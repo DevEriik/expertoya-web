@@ -6,9 +6,10 @@ import {
   WifiOff,
   CheckCircle2,
   X,
-  Sun,
-  Moon,
   HelpCircle,
+  Camera,
+  UploadCloud,
+  Trash2,
 } from "lucide-react";
 
 export interface ServiceFormValues {
@@ -17,6 +18,7 @@ export interface ServiceFormValues {
   precio: string;
   duracion?: string;
   descripcion: string;
+  fotos?: string[];
 }
 
 interface ServiceFormWithAIProps {
@@ -51,6 +53,8 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
   const [precio, setPrecio] = useState(initialValues?.precio || "");
   const [duracion, setDuracion] = useState(initialValues?.duracion || "1 a 2 horas");
   const [descripcion, setDescripcion] = useState(initialValues?.descripcion || "");
+  const [fotos, setFotos] = useState<string[]>(initialValues?.fotos || []);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -59,13 +63,6 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
   const [isOnline, setIsOnline] = useState<boolean>(
     typeof navigator !== "undefined" ? navigator.onLine : true
   );
-
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    if (typeof document !== "undefined") {
-      return document.documentElement.classList.contains("dark");
-    }
-    return false;
-  });
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -104,16 +101,6 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
       }
     };
   }, []);
-
-  const toggleDarkMode = () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    if (newMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
 
   const handleCancelGeneration = () => {
     if (abortControllerRef.current) {
@@ -177,7 +164,11 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
     }, 1000);
 
     try {
-      const response = await fetch("/api/ia/generate-description", {
+      const apiUrl =
+        (import.meta.env.VITE_API_URL || "http://localhost:3000") +
+        "/api/ia/generate-description";
+
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -186,6 +177,7 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
           titulo: titulo.trim(),
           precio: precio.trim(),
           categoria: categoria.trim(),
+          descripcion_actual: descripcion.trim(),
         }),
         signal: controller.signal,
       });
@@ -276,7 +268,39 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
       precio: precio.trim(),
       duracion: duracion.trim(),
       descripcion: descripcion.trim(),
+      fotos,
     });
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const remainingSlots = 5 - fotos.length;
+    if (remainingSlots <= 0) {
+      setErrorMessage("Solo puedes adjuntar hasta 5 fotos por servicio.");
+      return;
+    }
+
+    const filesToRead = Array.from(files).slice(0, remainingSlots);
+    filesToRead.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setFotos((prev) => {
+            if (prev.length >= 5) return prev;
+            return [...prev, event.target!.result as string];
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    e.target.value = "";
+  };
+
+  const handleRemovePhoto = (indexToRemove: number) => {
+    setFotos((prev) => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
   return (
@@ -290,26 +314,6 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
             Completa la información para ofrecer tu trabajo a miles de clientes en ExpertoYa.
           </p>
         </div>
-
-        <button
-          type="button"
-          onClick={toggleDarkMode}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold tracking-wide transition-colors
-            border-slate-300 dark:border-slate-700 bg-white dark:bg-[#1F2937] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-          title="Alternar Modo Claro / Oscuro"
-        >
-          {isDarkMode ? (
-            <>
-              <Sun className="w-4 h-4 text-amber-400" />
-              <span>Modo Claro</span>
-            </>
-          ) : (
-            <>
-              <Moon className="w-4 h-4 text-indigo-600" />
-              <span>Modo Oscuro</span>
-            </>
-          )}
-        </button>
       </div>
 
       <form
@@ -566,6 +570,89 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* Fotografías del Servicio (Máx 5) */}
+          <div className="pt-2">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-[#283593] dark:text-[#FDFCF4] flex items-center gap-1.5">
+                <Camera className="w-4 h-4 text-primary" />
+                <span>Fotografías del Servicio ({fotos.length}/5)</span>
+              </label>
+              {fotos.length < 5 && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline cursor-pointer"
+                >
+                  <UploadCloud className="w-4 h-4" />
+                  <span>Adjuntar Foto</span>
+                </button>
+              )}
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handlePhotoUpload}
+              className="hidden"
+            />
+
+            {fotos.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-2">
+                {fotos.map((imgUri, idx) => (
+                  <div
+                    key={idx}
+                    className="relative group rounded-2xl overflow-hidden aspect-square border border-slate-200 dark:border-gray-700 bg-slate-100 dark:bg-gray-800 shadow-sm"
+                  >
+                    <img
+                      src={imgUri}
+                      alt={`Foto ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-black/60 text-white backdrop-blur-sm">
+                      {idx === 0 ? "Principal" : `#${idx + 1}`}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePhoto(idx)}
+                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md transition-transform group-hover:scale-110 cursor-pointer"
+                      title="Eliminar foto"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+
+                {fotos.length < 5 && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="rounded-2xl border-2 border-dashed border-slate-300 dark:border-gray-700 hover:border-primary dark:hover:border-primary flex flex-col items-center justify-center p-3 text-slate-400 hover:text-primary transition-all aspect-square cursor-pointer bg-slate-50/50 dark:bg-dark-bg/50"
+                  >
+                    <UploadCloud className="w-6 h-6 mb-1" />
+                    <span className="text-xs font-bold">Agregar</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="rounded-2xl border-2 border-dashed border-slate-300 dark:border-gray-700 hover:border-primary dark:hover:border-primary p-6 text-center cursor-pointer transition-colors bg-white dark:bg-dark-surface flex flex-col items-center justify-center"
+              >
+                <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-gray-800 flex items-center justify-center text-slate-400 mb-2">
+                  <UploadCloud className="w-6 h-6" />
+                </div>
+                <p className="text-sm font-bold text-slate-700 dark:text-gray-300 mb-0.5">
+                  Haz clic para adjuntar fotos demostrativas de tu trabajo
+                </p>
+                <p className="text-xs text-slate-500 dark:text-gray-400">
+                  Puedes subir hasta 5 fotos en formato JPG o PNG. La primera foto será la portada.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

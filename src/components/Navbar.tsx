@@ -73,11 +73,6 @@ export const Navbar = () => {
           <a href="#" className="hover:text-primary transition-colors">
             Profesionales
           </a>
-          {user?.rol === "PROFESIONAL" && (
-            <a href="#" className="hover:text-primary transition-colors">
-              Panel Pro
-            </a>
-          )}
           <Link
             to="/chats"
             className={`transition-colors ${
@@ -88,6 +83,18 @@ export const Navbar = () => {
           >
             Chats
           </Link>
+          {user && (
+            <Link
+              to="/perfil"
+              className={`transition-colors ${
+                location.pathname === "/perfil"
+                  ? "text-primary"
+                  : "hover:text-primary"
+              }`}
+            >
+              Mi Perfil
+            </Link>
+          )}
           {user?.rol === "ADMIN" && (
             <Link to="/admin" className="hover:text-primary transition-colors">
               Panel Admin
@@ -118,15 +125,19 @@ export const Navbar = () => {
 
           {user ? (
             <div className="flex items-center gap-3">
-              <span className="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+              <Link
+                to="/perfil"
+                className="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2 hover:text-primary dark:hover:text-primary transition-colors cursor-pointer"
+                title="Ir a mi perfil y gestión de servicios"
+              >
                 <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-300">
                   <UserIcon size={18} />
                 </div>
-                Hola, {user.nombre}
-              </span>
+                <span>Hola, {user.nombre}</span>
+              </Link>
               <button 
                 onClick={handleLogout}
-                className="px-4 py-2 text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors flex items-center gap-2"
+                className="px-4 py-2 text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors flex items-center gap-2 cursor-pointer"
               >
                 <LogOut size={18} />
                 Salir
@@ -170,6 +181,17 @@ export const Navbar = () => {
         >
           <MessageSquare size={24} />
           <span className="text-[10px] font-bold">Chats</span>
+        </Link>
+        <Link
+          to={user ? "/perfil" : "/login"}
+          className={`flex flex-col items-center gap-1 ${
+            location.pathname === "/perfil"
+              ? "text-primary"
+              : "text-dark/40 dark:text-gray-400 hover:text-dark dark:hover:text-white transition-colors"
+          }`}
+        >
+          <UserIcon size={24} />
+          <span className="text-[10px] font-bold">Perfil</span>
         </Link>
         <button
           onClick={toggleTheme}
