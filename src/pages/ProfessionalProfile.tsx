@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -8,17 +8,24 @@ import {
   Loader2,
   Clock,
   DollarSign,
+  MessageSquare,
+  UserCheck,
 } from "lucide-react";
 import { Navbar } from "../components/Navbar";
+import { useAuth } from "../context/AuthContext";
+import { ContactModal } from "../components/chat/ContactModal";
 import type { Professional, ProfessionalService } from "../types/professional";
 
 export const ProfessionalProfile = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [profesional, setProfesional] = useState<Professional | null>(null);
   const [servicios, setServicios] = useState<ProfessionalService[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showContactModal, setShowContactModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -199,12 +206,27 @@ export const ProfessionalProfile = () => {
             </p>
           )}
 
-          <button
-            type="button"
-            className="mt-6 w-full sm:w-auto px-8 py-3 bg-primary text-white font-bold rounded-xl hover:opacity-90 transition-opacity"
-          >
-            Contratar
-          </button>
+          {user?.id === profesional.usuario.id || user?.id === profesional.id ? (
+            <div className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-bold rounded-xl border border-gray-200 dark:border-gray-700">
+              <UserCheck size={18} />
+              <span>Tu perfil profesional</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                if (!user) {
+                  navigate("/login");
+                  return;
+                }
+                setShowContactModal(true);
+              }}
+              className="mt-6 w-full sm:w-auto px-8 py-3 bg-[#FF8C00] text-white font-bold rounded-xl hover:bg-[#E67E00] shadow-md shadow-[#FF8C00]/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <MessageSquare size={18} />
+              <span>Contactar Profesional</span>
+            </button>
+          )}
         </div>
 
         <div className="mt-8">
@@ -246,6 +268,21 @@ export const ProfessionalProfile = () => {
           )}
         </div>
       </section>
+
+      {profesional && (
+        <ContactModal
+          isOpen={showContactModal}
+          professionalId={profesional.id}
+          professionalName={`${profesional.usuario.nombre} ${profesional.usuario.apellido}`}
+          professionalPhoto={profesional.usuario.foto_perfil}
+          profession={profesional.oficios?.[0]?.nombre_oficio}
+          onClose={() => setShowContactModal(false)}
+          onSuccess={(solicitudId) => {
+            setShowContactModal(false);
+            navigate(`/chats?chatId=${solicitudId}`);
+          }}
+        />
+      )}
     </main>
   );
 };
