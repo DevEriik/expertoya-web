@@ -1,32 +1,26 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
 import { MessagesList } from "../components/chat/MessagesList";
 import { ActiveConversation } from "../components/chat/ActiveConversation";
-import { CLIENT_CHATS, PRO_CHATS } from "../data/mockChatData";
 import type { ChatSession, UserRole } from "../types/chat";
 import { useAuth } from "../context/AuthContext";
 
 export const ChatsPage = () => {
-  const { user } = useAuth();
-  // Se evalúa automáticamente el rol según la autenticación del usuario
+  const { user, token } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryChatId = searchParams.get("chatId");
+
   const activeRole: UserRole =
     user?.rol === "PROFESIONAL" ? "PROFESIONAL" : "CLIENTE";
 
-  const [chats, setChats] = useState<ChatSession[]>(() =>
-    activeRole === "PROFESIONAL" ? PRO_CHATS : CLIENT_CHATS,
-  );
-  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [chats, setChats] = useState<ChatSession[]>([]);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const activeChatId = queryChatId || selectedChatId;
 
-  // Escuchar cambios de tema reactivamente
   const [isDark, setIsDark] = useState<boolean>(() =>
     document.documentElement.classList.contains("dark"),
   );
-
-  useEffect(() => {
-    // Sincroniza los chats mock cuando cambia el rol autenticado.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setChats(activeRole === "PROFESIONAL" ? PRO_CHATS : CLIENT_CHATS);
-  }, [activeRole]);
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
@@ -39,86 +33,105 @@ export const ChatsPage = () => {
     return () => observer.disconnect();
   }, []);
 
-  const activeChat = chats.find((c) => c.id === activeChatId) || null;
+  const fetchConversaciones = useCallback(() => {
+    if (!token) return;
 
-  const handleSendMessage = (chatId: string, text: string) => {
-    const currentPersonId =
-      activeRole === "CLIENTE" ? "user-client-1" : "pro-daniela";
+    fetch("http://localhost:3000/api/chat/conversaciones", {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        setChats(data?.conversaciones || []);
+      })
+      .catch((err) => {
+        console.error("Error al cargar conversaciones en web:", err);
+      });
+  }, [token]);
 
-    const newMessage = {
-      id: `msg-${Date.now()}`,
-      senderId: currentPersonId,
-      text,
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      dateLabel: "Hoy",
-    };
+  useEffect(() => {
+    fetchConversaciones();
+  }, [fetchConversaciones]);
 
+  const activeChat =
+    chats.find((c) => c.id === activeChatId) ||
+    (activeChatId
+      ? ({
+        id: activeChatId,
+        client: {
+          id: user?.id || "",
+          name:
+            `${user?.nombre || ""} ${user?.apellido || ""}`.trim() || "Cliente",
+          profession: "Cliente",
+          avatar: null,
+          isVerified: true,
+          role: "CLIENTE",
+        },
+        professional: {
+          id: "",
+          name: "Profesional",
+          profession: "Servicio",
+          avatar: null,
+          isVerified: true,
+          role: "PROFESIONAL",
+        },
+        lastMessage: "",
+        timestamp: "Ahora",
+        unreadCount: 0,
+        status: "EN PROGRESO",
+        escrowStatus: "HELD",
+        escrowAmount: "$0",
+        messages: [],
+      } as ChatSession)
+      : null);
+
+  const handleReleaseFunds = (targetChatId: string) => {
     setChats((prev) =>
-      prev.map((c) => {
-        if (c.id === chatId) {
-          return {
-            ...c,
-            lastMessage: text,
-            timestamp: "Ahora",
-            messages: [...c.messages, newMessage],
-          };
-        }
-        return c;
-      }),
-    );
-  };
-
-  const handleReleaseFunds = (chatId: string) => {
-    setChats((prev) =>
-      prev.map((c) => {
-        if (c.id === chatId) {
-          return {
-            ...c,
-            escrowStatus: "RELEASED",
-            status: "COMPLETADO",
-          };
-        }
-        return c;
-      }),
+      prev.map((c) =>
+        c.id === targetChatId
+          ? { ...c, escrowStatus: "RELEASED", status: "COMPLETADO" }
+          : c,
+      ),
     );
   };
 
   return (
     <div
-      className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
-        isDark ? "bg-[#121826] text-[#FDFCF4]" : "bg-[#FDFCF4] text-[#283593]"
-      }`}
+      className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${isDark ? "bg-[#121826] text-[#FDFCF4]" : "bg-[#FDFCF4] text-[#283593]"
+        }`}
     >
       <Navbar />
 
-      {/* Main Content Area (sin header repetido ni botones de selector de rol) */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-        {/* Mobile View: muestra listado o conversación activa */}
         <div className="block lg:hidden">
           {activeChat ? (
             <ActiveConversation
               chat={activeChat}
               activeRole={activeRole}
               isDark={isDark}
-              onBack={() => setActiveChatId(null)}
-              onSendMessage={handleSendMessage}
+              onBack={() => {
+                setSelectedChatId(null);
+                setSearchParams({});
+                fetchConversaciones();
+              }}
               onReleaseFunds={handleReleaseFunds}
             />
           ) : (
             <MessagesList
               chats={chats}
               activeChatId={activeChatId}
-              onSelectChat={(id) => setActiveChatId(id)}
+              onSelectChat={(id) => {
+                setSelectedChatId(id);
+                setSearchParams({ chatId: id });
+              }}
               activeRole={activeRole}
               isDark={isDark}
             />
           )}
         </div>
 
-        {/* Desktop View */}
         <div className="hidden lg:grid lg:grid-cols-12 gap-8 items-start">
           <div
             className={
@@ -130,7 +143,10 @@ export const ChatsPage = () => {
             <MessagesList
               chats={chats}
               activeChatId={activeChatId}
-              onSelectChat={(id) => setActiveChatId(id)}
+              onSelectChat={(id) => {
+                setSelectedChatId(id);
+                setSearchParams({ chatId: id });
+              }}
               activeRole={activeRole}
               isDark={isDark}
             />
@@ -142,8 +158,6 @@ export const ChatsPage = () => {
                 chat={activeChat}
                 activeRole={activeRole}
                 isDark={isDark}
-                onBack={() => setActiveChatId(null)}
-                onSendMessage={handleSendMessage}
                 onReleaseFunds={handleReleaseFunds}
               />
             </div>
