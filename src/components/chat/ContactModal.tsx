@@ -69,9 +69,10 @@ export const ContactModal: React.FC<ContactModalProps> = ({
 
       onClose();
       onSuccess(data.solicitud_id);
-    } catch (error: any) {
-      console.error('Error al iniciar conversación:', error.message);
-      alert(error.message || 'Ocurrió un error al contactar al profesional.');
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Ocurrió un error al contactar al profesional.';
+      console.error('Error al iniciar conversación:', msg);
+      alert(msg);
     } finally {
       setLoading(false);
     }

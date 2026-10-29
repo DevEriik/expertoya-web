@@ -94,9 +94,9 @@ export const buildGoogleCalendarUrl = (
   otherPersonName: string,
   profession?: string
 ): string => {
-  let year = '';
-  let month = '';
-  let day = '';
+  let year: string;
+  let month: string;
+  let day: string;
 
   const isoMatch = propuesta.fecha?.match(/^(\d{4})-(\d{2})-(\d{2})/);
   const latamMatch = propuesta.fecha?.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);

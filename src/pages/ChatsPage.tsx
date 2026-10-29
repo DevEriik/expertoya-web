@@ -15,7 +15,8 @@ export const ChatsPage = () => {
     user?.rol === "PROFESIONAL" ? "PROFESIONAL" : "CLIENTE";
 
   const [chats, setChats] = useState<ChatSession[]>([]);
-  const [activeChatId, setActiveChatId] = useState<string | null>(queryChatId);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const activeChatId = queryChatId || selectedChatId;
 
   const [isDark, setIsDark] = useState<boolean>(() =>
     document.documentElement.classList.contains("dark"),
@@ -33,10 +34,7 @@ export const ChatsPage = () => {
   }, []);
 
   const fetchConversaciones = useCallback(() => {
-    if (!token) {
-      setChats([]);
-      return;
-    }
+    if (!token) return;
 
     fetch("http://localhost:3000/api/chat/conversaciones", {
       headers: {
@@ -46,28 +44,16 @@ export const ChatsPage = () => {
     })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.conversaciones) {
-          setChats(data.conversaciones);
-        } else {
-          setChats([]);
-        }
+        setChats(data?.conversaciones || []);
       })
       .catch((err) => {
         console.error("Error al cargar conversaciones en web:", err);
-        setChats([]);
       });
   }, [token]);
 
   useEffect(() => {
     fetchConversaciones();
   }, [fetchConversaciones]);
-
-  useEffect(() => {
-    if (queryChatId) {
-      setActiveChatId(queryChatId);
-      fetchConversaciones();
-    }
-  }, [queryChatId, fetchConversaciones]);
 
   const activeChat =
     chats.find((c) => c.id === activeChatId) ||
@@ -126,7 +112,7 @@ export const ChatsPage = () => {
               activeRole={activeRole}
               isDark={isDark}
               onBack={() => {
-                setActiveChatId(null);
+                setSelectedChatId(null);
                 setSearchParams({});
                 fetchConversaciones();
               }}
@@ -136,7 +122,10 @@ export const ChatsPage = () => {
             <MessagesList
               chats={chats}
               activeChatId={activeChatId}
-              onSelectChat={(id) => setActiveChatId(id)}
+              onSelectChat={(id) => {
+                setSelectedChatId(id);
+                setSearchParams({ chatId: id });
+              }}
               activeRole={activeRole}
               isDark={isDark}
             />
@@ -154,7 +143,10 @@ export const ChatsPage = () => {
             <MessagesList
               chats={chats}
               activeChatId={activeChatId}
-              onSelectChat={(id) => setActiveChatId(id)}
+              onSelectChat={(id) => {
+                setSelectedChatId(id);
+                setSearchParams({ chatId: id });
+              }}
               activeRole={activeRole}
               isDark={isDark}
             />

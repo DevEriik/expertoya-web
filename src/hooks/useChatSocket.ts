@@ -15,64 +15,69 @@ const isUUID = (str: string) =>
 
 export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParams) => {
   const [mensajes, setMensajes] = useState<MensajeChatModel[]>([]);
-  const [cargando, setCargando] = useState<boolean>(true);
+  const [cargando, setCargando] = useState<boolean>(() => isUUID(solicitudId));
   const [bloqueado, setBloqueado] = useState<boolean>(false);
   const [estadoSolicitud, setEstadoSolicitud] = useState<string>('');
   const [subiendoFoto, setSubiendoFoto] = useState<boolean>(false);
   const [otroUsuarioEscribiendo, setOtroUsuarioEscribiendo] = useState<boolean>(false);
   const socketRef = useRef<Socket | null>(null);
-  const typingSafetyTimeoutRef = useRef<any>(null);
-  const typingDebounceTimeoutRef = useRef<any>(null);
+  const typingSafetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const esSolicitudReal = isUUID(solicitudId);
 
-  const cargarHistorial = useCallback(async () => {
-    if (!solicitudId) return;
-
-    if (!esSolicitudReal) {
-      setCargando(false);
-      return;
-    }
-
-    try {
-      setCargando(true);
-      const res = await fetch(`${API_BASE_URL}/api/chat/${solicitudId}/mensajes`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-
-      if (!res.ok) {
-        throw new Error(`Error al recuperar mensajes: ${res.status}`);
-      }
-
-      const data = await res.json();
-      setBloqueado(Boolean(data.bloqueado));
-      setEstadoSolicitud(data.estado_solicitud || '');
-
-      const mapeados: MensajeChatModel[] = (data.mensajes || []).map((m: any) => ({
-        id: m.id,
-        solicitud_id: m.solicitud_id,
-        remitente_id: m.remitente_id,
-        contenido: m.contenido,
-        adjunto_url: m.adjunto_url,
-        enviado_en: m.enviado_en,
-        leido: m.leido,
-        status: m.leido ? 'LEIDO' : 'ENTREGADO',
-      }));
-
-      setMensajes(mapeados);
-    } catch (error) {
-      console.error('Error al cargar historial del chat:', error);
-    } finally {
-      setCargando(false);
-    }
-  }, [solicitudId, token, esSolicitudReal]);
+  const [reloadTrigger, setReloadTrigger] = useState(0);
+  const recargarHistorial = useCallback(() => {
+    setReloadTrigger((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
-    cargarHistorial();
-  }, [cargarHistorial]);
+    if (!solicitudId || !esSolicitudReal) return;
+    let ignore = false;
+
+    fetch(`${API_BASE_URL}/api/chat/${solicitudId}/mensajes`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Error al recuperar mensajes: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (!ignore) {
+          setBloqueado(Boolean(data.bloqueado));
+          setEstadoSolicitud(data.estado_solicitud || '');
+
+          const mapeados: MensajeChatModel[] = (data.mensajes || []).map((m: MensajeChatModel) => ({
+            id: m.id,
+            solicitud_id: m.solicitud_id,
+            remitente_id: m.remitente_id,
+            contenido: m.contenido,
+            adjunto_url: m.adjunto_url,
+            enviado_en: m.enviado_en,
+            leido: m.leido,
+            status: m.leido ? 'LEIDO' : 'ENTREGADO',
+          }));
+
+          setMensajes(mapeados);
+          setCargando(false);
+        }
+      })
+      .catch((error) => {
+        if (!ignore) {
+          console.error('Error al cargar historial del chat:', error);
+          setCargando(false);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [solicitudId, token, esSolicitudReal, reloadTrigger]);
 
   useEffect(() => {
     if (!solicitudId || !token || !esSolicitudReal || !userId) {
@@ -100,7 +105,7 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
       setEstadoSolicitud(data.estado_solicitud || '');
     });
 
-    socket.on('nuevo_mensaje', (nuevoMsg: any) => {
+    socket.on('nuevo_mensaje', (nuevoMsg: MensajeChatModel & { temp_id?: string }) => {
       setMensajes((prev) => {
         if (nuevoMsg.remitente_id === userId) {
           const matchIndex = prev.findIndex(
@@ -279,20 +284,19 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
           contenido: texto.trim(),
           temp_id: tempId,
         },
-        (ack: any) => {
+        (ack: { error?: string; status?: string; mensaje?: MensajeChatModel; mensaje_id?: string }) => {
           if (ack?.error) {
             alert(ack.error);
             setMensajes((prev) => prev.filter((m) => m.id !== tempId));
           } else if (ack?.status === 'ENVIADO' || ack?.status === 'ok') {
-            const realMsg = ack.mensaje || ack;
-            const realId = realMsg?.id || ack.mensaje_id || tempId;
+            const realId = ack.mensaje?.id || ack.mensaje_id || tempId;
             setMensajes((prev) =>
               prev.map((m) =>
                 m.id === tempId
                   ? {
                     ...m,
                     id: realId,
-                    enviado_en: realMsg?.enviado_en || m.enviado_en,
+                    enviado_en: ack.mensaje?.enviado_en || m.enviado_en,
                     status: 'ENVIADO',
                   }
                   : m
@@ -360,16 +364,16 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
                 adjunto_url,
                 temp_id: tempId,
               },
-              (ack: any) => {
+              (ack: { error?: string; status?: string; mensaje?: MensajeChatModel }) => {
                 if (ack?.error) {
                   alert(ack.error);
                   setMensajes((prev) => prev.filter((m) => m.id !== tempId));
                 } else if (ack?.status === 'ENVIADO' || ack?.status === 'ok') {
-                  const realMsg = ack.mensaje || ack;
+                  const realId = ack.mensaje?.id || tempId;
                   setMensajes((prev) =>
                     prev.map((m) =>
                       m.id === tempId
-                        ? { ...m, id: realMsg.id, status: 'ENVIADO' }
+                        ? { ...m, id: realId, status: 'ENVIADO' }
                         : m
                     )
                   );
@@ -378,9 +382,10 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
             );
           }
         }
-      } catch (error: any) {
-        console.error('Error al subir adjunto de chat:', error);
-        alert(error.message || 'Error al adjuntar archivo al chat');
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : 'Error al adjuntar archivo al chat';
+        console.error('Error al subir adjunto de chat:', msg);
+        alert(msg);
       } finally {
         setSubiendoFoto(false);
       }
@@ -451,6 +456,6 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
     enviarMensaje,
     subirArchivo,
     responderPropuesta,
-    recargarHistorial: cargarHistorial,
+    recargarHistorial,
   };
 };

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { ChatSession, UserRole } from '../../types/chat';
 import {
@@ -83,7 +83,6 @@ export const ActiveConversation: React.FC<Props> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textInputRef = useRef<HTMLInputElement>(null);
 
-  // Cerrar lightbox con tecla Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -98,7 +97,6 @@ export const ActiveConversation: React.FC<Props> = ({
 
   const currentUserId = user?.id || (activeRole === 'CLIENTE' ? chat.client.id : chat.professional.id);
 
-  // Hook de Socket.io en tiempo real y persistencia en PostgreSQL
   const {
     mensajes,
     cargando,
@@ -124,25 +122,23 @@ export const ActiveConversation: React.FC<Props> = ({
     presupuesto: string;
     materiales: string;
     nota: string;
-  }>({
+  }>(() => ({
     fecha: new Date(Date.now() + 86400000).toISOString().split('T')[0],
     hora: '14:00 a 16:00 hs',
     presupuesto: chat.escrowAmount || '',
     materiales: '',
     nota: '',
-  });
+  }));
 
-  // Estados de Seguridad y Antifraude (Mejora 5)
   const [mostrarModalSeguridad, setMostrarModalSeguridad] = useState(false);
   const [mostrarConfirmacionEnvioRiesgo, setMostrarConfirmacionEnvioRiesgo] = useState(false);
   const [mensajePendienteRiesgo, setMensajePendienteRiesgo] = useState<string | null>(null);
 
-  // Estado de Grabación de Audio / Mensajes de Voz
   const [grabandoAudio, setGrabandoAudio] = useState(false);
   const [segundosGrabacion, setSegundosGrabacion] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const timerIntervalRef = useRef<any>(null);
+  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     return () => {
@@ -176,7 +172,7 @@ export const ActiveConversation: React.FC<Props> = ({
       timerIntervalRef.current = setInterval(() => {
         setSegundosGrabacion((prev) => prev + 1);
       }, 1000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error al acceder al micrófono:', err);
       alert('No se pudo acceder al micrófono. Por favor permite el acceso en el navegador.');
     }
@@ -200,7 +196,10 @@ export const ActiveConversation: React.FC<Props> = ({
     };
 
     recorder.stop();
-    clearInterval(timerIntervalRef.current);
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
     setGrabandoAudio(false);
     setSegundosGrabacion(0);
   };
@@ -212,7 +211,10 @@ export const ActiveConversation: React.FC<Props> = ({
       mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
       mediaRecorderRef.current = null;
     }
-    clearInterval(timerIntervalRef.current);
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
     audioChunksRef.current = [];
     setGrabandoAudio(false);
     setSegundosGrabacion(0);
@@ -243,38 +245,38 @@ export const ActiveConversation: React.FC<Props> = ({
   const [variacion, setVariacion] = useState(0);
 
   // Cargar sugerencias contextuales con IA
-  const cargarSugerencias = useCallback(async (vOffset?: number) => {
-    if (!chat.id || estaBloqueado) return;
-    try {
-      setCargandoSugerencias(true);
-      const v = typeof vOffset === 'number' ? vOffset : variacion;
-      const res = await fetch(`http://localhost:3000/api/chat/${chat.id}/sugerencias-ia?variacion=${v}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data?.sugerencias) && data.sugerencias.length > 0) {
-          setSugerencias(data.sugerencias);
-        }
-      }
-    } catch (err) {
-      console.warn('Error al obtener sugerencias IA:', err);
-    } finally {
-      setCargandoSugerencias(false);
-    }
-  }, [chat.id, token, estaBloqueado, variacion]);
-
   useEffect(() => {
-    cargarSugerencias();
-  }, [cargarSugerencias, mensajes.length]);
+    if (!chat.id || estaBloqueado) return;
+    let cancel = false;
+
+    fetch(`http://localhost:3000/api/chat/${chat.id}/sugerencias-ia?variacion=${variacion}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancel && Array.isArray(data?.sugerencias) && data.sugerencias.length > 0) {
+          setSugerencias(data.sugerencias);
+          setCargandoSugerencias(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancel) {
+          console.warn('Error al obtener sugerencias IA:', err);
+          setCargandoSugerencias(false);
+        }
+      });
+
+    return () => {
+      cancel = true;
+    };
+  }, [chat.id, estaBloqueado, token, variacion, mensajes.length]);
 
   const handleRefreshSuggestions = () => {
-    const nextVar = variacion + 1;
-    setVariacion(nextVar);
-    cargarSugerencias(nextVar);
+    setCargandoSugerencias(true);
+    setVariacion((prev) => prev + 1);
   };
 
   const handleSelectSuggestion = (sug: string) => {
@@ -386,14 +388,14 @@ export const ActiveConversation: React.FC<Props> = ({
   return (
     <div
       className={`flex flex-col h-[750px] max-h-[85vh] w-full rounded-2xl sm:rounded-3xl border overflow-hidden shadow-lg transition-colors ${isDark
-          ? 'bg-[#121826] border-gray-800'
-          : 'bg-[#FDFCF4] border-gray-200/80'
+        ? 'bg-[#121826] border-gray-800'
+        : 'bg-[#FDFCF4] border-gray-200/80'
         }`}
     >
       <header
         className={`flex items-center justify-between px-4 sm:px-6 py-3.5 border-b shrink-0 ${isDark
-            ? 'bg-[#1F2937] border-gray-800 text-[#FDFCF4]'
-            : 'bg-white border-gray-100 text-[#283593]'
+          ? 'bg-[#1F2937] border-gray-800 text-[#FDFCF4]'
+          : 'bg-white border-gray-100 text-[#283593]'
           }`}
       >
         <div className="flex items-center gap-3 min-w-0">
@@ -463,16 +465,16 @@ export const ActiveConversation: React.FC<Props> = ({
 
       <div
         className={`flex items-center justify-between px-4 sm:px-6 py-2 border-b text-xs sm:text-sm font-semibold shrink-0 transition-colors ${chat.escrowStatus === 'RELEASED'
+          ? isDark
+            ? 'bg-emerald-950/40 border-emerald-800 text-emerald-400'
+            : 'bg-emerald-50 border-emerald-100 text-emerald-700'
+          : hasEscrow
             ? isDark
-              ? 'bg-emerald-950/40 border-emerald-800 text-emerald-400'
-              : 'bg-emerald-50 border-emerald-100 text-emerald-700'
-            : hasEscrow
-              ? isDark
-                ? 'bg-[#00BFA5]/10 border-[#00BFA5]/20 text-[#33EFA5]'
-                : 'bg-[#E8F8F5] border-[#B2DFDB] text-[#00897B]'
-              : isDark
-                ? 'bg-[#1e293b]/60 border-gray-800 text-slate-300'
-                : 'bg-[#F0FDF4] border-emerald-100 text-[#065F46]'
+              ? 'bg-[#00BFA5]/10 border-[#00BFA5]/20 text-[#33EFA5]'
+              : 'bg-[#E8F8F5] border-[#B2DFDB] text-[#00897B]'
+            : isDark
+              ? 'bg-[#1e293b]/60 border-gray-800 text-slate-300'
+              : 'bg-[#F0FDF4] border-emerald-100 text-[#065F46]'
           }`}
       >
         <div className="flex items-center gap-2 min-w-0">
@@ -565,8 +567,8 @@ export const ActiveConversation: React.FC<Props> = ({
                     return (
                       <div
                         className={`w-full max-w-md sm:max-w-lg p-4 sm:p-5 rounded-2xl shadow-md border space-y-3 transition-all ${isDark
-                            ? 'bg-[#1E293B] border-amber-500/40 text-white'
-                            : 'bg-white border-amber-300 text-gray-800'
+                          ? 'bg-[#1E293B] border-amber-500/40 text-white'
+                          : 'bg-white border-amber-300 text-gray-800'
                           }`}
                       >
                         <div className="flex items-start justify-between gap-3 border-b pb-3 border-amber-200/50 dark:border-gray-700">
@@ -707,10 +709,10 @@ export const ActiveConversation: React.FC<Props> = ({
                 ) : (
                   <div
                     className={`max-w-[85%] sm:max-w-md p-3.5 rounded-2xl shadow-sm space-y-1.5 ${isCurrentUser
-                        ? 'bg-[#FF8C00] text-white rounded-br-xs'
-                        : isDark
-                          ? 'bg-[#1F2937] text-[#FDFCF4] border border-gray-800 rounded-bl-xs'
-                          : 'bg-white text-[#283593] border border-gray-100 rounded-bl-xs'
+                      ? 'bg-[#FF8C00] text-white rounded-br-xs'
+                      : isDark
+                        ? 'bg-[#1F2937] text-[#FDFCF4] border border-gray-800 rounded-bl-xs'
+                        : 'bg-white text-[#283593] border border-gray-100 rounded-bl-xs'
                       }`}
                   >
                     {isAudioAttachment(msg.adjunto_url, msg.contenido) ? (
@@ -753,10 +755,10 @@ export const ActiveConversation: React.FC<Props> = ({
                             return (
                               <div
                                 className={`mt-2 p-2 rounded-lg text-[11px] leading-snug flex items-start gap-1.5 border shadow-2xs ${isCurrentUser
-                                    ? 'bg-amber-500/25 border-amber-300/40 text-white'
-                                    : isDark
-                                      ? 'bg-amber-950/40 border-amber-500/30 text-amber-200'
-                                      : 'bg-amber-50 border-amber-200 text-amber-800'
+                                  ? 'bg-amber-500/25 border-amber-300/40 text-white'
+                                  : isDark
+                                    ? 'bg-amber-950/40 border-amber-500/30 text-amber-200'
+                                    : 'bg-amber-50 border-amber-200 text-amber-800'
                                   }`}
                               >
                                 <ShieldAlert className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-400" />
@@ -776,10 +778,10 @@ export const ActiveConversation: React.FC<Props> = ({
 
                     <div
                       className={`flex items-center justify-end gap-1.5 text-[10px] font-medium ${isCurrentUser
-                          ? 'text-white/80'
-                          : isDark
-                            ? 'text-gray-400'
-                            : 'text-gray-400'
+                        ? 'text-white/80'
+                        : isDark
+                          ? 'text-gray-400'
+                          : 'text-gray-400'
                         }`}
                     >
                       <span>{timeStr}</span>
@@ -800,8 +802,8 @@ export const ActiveConversation: React.FC<Props> = ({
             />
             <div
               className={`px-4 py-3 rounded-2xl shadow-sm flex items-center gap-1.5 ${isDark
-                  ? 'bg-[#1F2937] border border-gray-800'
-                  : 'bg-white border border-gray-100'
+                ? 'bg-[#1F2937] border border-gray-800'
+                : 'bg-white border border-gray-100'
                 } rounded-bl-xs`}
             >
               <span className="w-2 h-2 rounded-full bg-[#FF8C00] animate-bounce [animation-delay:-0.3s]" />
@@ -831,8 +833,8 @@ export const ActiveConversation: React.FC<Props> = ({
                 type="button"
                 onClick={() => handleSelectSuggestion(sug)}
                 className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap active:scale-95 shadow-xs ${isDark
-                    ? 'bg-[#121826] text-gray-200 border-gray-700 hover:border-[#FF8C00] hover:text-[#FF8C00]'
-                    : 'bg-white text-gray-700 border-orange-200 hover:border-[#FF8C00] hover:text-[#FF8C00] hover:bg-orange-50'
+                  ? 'bg-[#121826] text-gray-200 border-gray-700 hover:border-[#FF8C00] hover:text-[#FF8C00]'
+                  : 'bg-white text-gray-700 border-orange-200 hover:border-[#FF8C00] hover:text-[#FF8C00] hover:bg-orange-50'
                   }`}
                 title="Hacer clic para editar en el campo de texto"
               >
@@ -874,8 +876,8 @@ export const ActiveConversation: React.FC<Props> = ({
       <form
         onSubmit={handleSend}
         className={`p-3 sm:p-4 border-t flex items-center gap-2 sm:gap-3 shrink-0 ${estaBloqueado
-            ? 'opacity-50 pointer-events-none'
-            : ''
+          ? 'opacity-50 pointer-events-none'
+          : ''
           } ${isDark ? 'bg-[#1F2937] border-gray-800' : 'bg-white border-gray-100'
           }`}
       >
@@ -965,8 +967,8 @@ export const ActiveConversation: React.FC<Props> = ({
               }
               disabled={estaBloqueado}
               className={`flex-1 py-2 sm:py-2.5 px-4 text-sm rounded-full border outline-none transition-all ${isDark
-                  ? 'bg-[#121826] border-gray-700 text-white placeholder-gray-500 focus:border-[#FF8C00]'
-                  : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-[#FF8C00] focus:bg-white'
+                ? 'bg-[#121826] border-gray-700 text-white placeholder-gray-500 focus:border-[#FF8C00]'
+                : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-[#FF8C00] focus:bg-white'
                 }`}
             />
 
@@ -1101,8 +1103,8 @@ export const ActiveConversation: React.FC<Props> = ({
           <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
             <div
               className={`w-full max-w-lg rounded-2xl shadow-2xl p-6 border space-y-4 ${isDark
-                  ? 'bg-[#1E293B] border-gray-700 text-white'
-                  : 'bg-white border-gray-200 text-gray-800'
+                ? 'bg-[#1E293B] border-gray-700 text-white'
+                : 'bg-white border-gray-200 text-gray-800'
                 }`}
             >
               <div className="flex items-center justify-between border-b pb-3 border-gray-200 dark:border-gray-700">

@@ -30,10 +30,8 @@ export const VoiceNotePlayer: React.FC<Props> = ({
     };
 
     const handleTimeUpdate = () => {
-      if (!isPlaying) {
-        setCurrentTime(audio.currentTime);
-      }
-      if (!duration && audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+      setCurrentTime(audio.currentTime);
+      if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
         setDuration(audio.duration);
       }
     };
