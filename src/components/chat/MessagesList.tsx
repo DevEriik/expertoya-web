@@ -3,6 +3,7 @@ import type { ChatSession, UserRole } from '../../types/chat';
 import { ChatStatusBadge } from './ChatStatusBadge';
 import { CheckCircle2, MessageSquare, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 interface Props {
   chats: ChatSession[];
@@ -20,6 +21,7 @@ export const MessagesList: React.FC<Props> = ({
   isDark = false,
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [dismissedPromptId, setDismissedPromptId] = useState<string | null>(null);
 
   const incomingChat =
@@ -144,8 +146,11 @@ export const MessagesList: React.FC<Props> = ({
       ) : (
         <div className="space-y-3" role="list" aria-label="Historial de mensajes">
           {chats.map((chat) => {
-            const otherPerson =
-              activeRole === 'CLIENTE' ? chat.professional : chat.client;
+            const isUserTheProfessional =
+              (user?.id && chat.professional?.id && user.id === chat.professional.id) ||
+              (user?.id && chat.client?.id && user.id !== chat.client.id) ||
+              activeRole === 'PROFESIONAL';
+            const otherPerson = isUserTheProfessional ? chat.client : chat.professional;
             const isSelected = activeChatId === chat.id;
 
             const avatarUri =

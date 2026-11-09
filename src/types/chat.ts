@@ -159,3 +159,16 @@ export const buildGoogleCalendarUrl = (
   )}&dates=${dates}`;
 };
 
+
+export interface VideoCallInvitation {
+  solicitud_id: string;
+  roomUrl: string;
+  roomName: string;
+  caller: {
+    id: string;
+    name: string;
+    avatar?: string | null;
+    role: 'CLIENTE' | 'PROFESIONAL';
+  };
+  sesion_id?: string;
+}
