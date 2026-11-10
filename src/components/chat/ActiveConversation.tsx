@@ -10,7 +10,6 @@ import {
   Check,
   CheckCheck,
   Clock,
-  Lock,
   Loader2,
   MessageSquare,
   Sparkles,
@@ -28,6 +27,10 @@ import {
   Trash2,
   ShieldAlert,
   Info,
+  MoreVertical,
+  Ban,
+  AlertTriangle,
+  AlertOctagon,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useChatSocket } from '../../hooks/useChatSocket';
@@ -102,6 +105,7 @@ export const ActiveConversation: React.FC<Props> = ({
     mensajes,
     cargando,
     bloqueado,
+    bloqueoInfo,
     estadoSolicitud,
     subiendoFoto,
     otroUsuarioEscribiendo,
@@ -110,6 +114,7 @@ export const ActiveConversation: React.FC<Props> = ({
     enviarMensaje,
     subirArchivo,
     responderPropuesta,
+    recargarHistorial,
     llamadaEntrante,
     llamadaSaliente,
     salaUrlActiva,
@@ -124,8 +129,125 @@ export const ActiveConversation: React.FC<Props> = ({
     token,
   });
 
+  const [menuSeguridadAbierto, setMenuSeguridadAbierto] = useState(false);
+  const [modalBloqueoAbierto, setModalBloqueoAbierto] = useState(false);
+  const [motivoBloqueo, setMotivoBloqueo] = useState('Trato inadecuado o irrespetuoso');
+  const [detalleBloqueo, setDetalleBloqueo] = useState('');
+  const [isBloqueando, setIsBloqueando] = useState(false);
 
-  // Tono de llamada entrante en Web (Web Audio API)
+  const [modalDenunciaAbierto, setModalDenunciaAbierto] = useState(false);
+  const [tipoMotivoDenuncia, setTipoMotivoDenuncia] = useState('PAGO_FUERA_PLATAFORMA');
+  const [detalleDenuncia, setDetalleDenuncia] = useState('');
+  const [denunciaBloquearTambien, setDenunciaBloquearTambien] = useState(true);
+  const [isDenunciando, setIsDenunciando] = useState(false);
+
+  const [feedbackMensaje, setFeedbackMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
+
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuSeguridadAbierto(false);
+      }
+    };
+    if (menuSeguridadAbierto) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuSeguridadAbierto]);
+
+  const handleConfirmarBloqueo = async () => {
+    if (!motivoBloqueo.trim()) return;
+    setIsBloqueando(true);
+    try {
+      const motivoCompleto = detalleBloqueo.trim()
+        ? `${motivoBloqueo}: ${detalleBloqueo.trim()}`
+        : motivoBloqueo;
+
+      const res = await fetch(`http://localhost:3000/api/chat/${chat.id}/bloquear`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          motivo: motivoCompleto,
+          denunciar: false,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al bloquear usuario');
+      }
+
+      setModalBloqueoAbierto(false);
+      setDetalleBloqueo('');
+      setFeedbackMensaje({
+        tipo: 'success',
+        texto: 'Usuario bloqueado exitosamente. La comunicación ha sido deshabilitada.',
+      });
+      recargarHistorial();
+    } catch (err: any) {
+      console.error('Error al bloquear:', err);
+      setFeedbackMensaje({
+        tipo: 'error',
+        texto: err.message || 'Error al procesar el bloqueo',
+      });
+    } finally {
+      setIsBloqueando(false);
+    }
+  };
+
+  const handleConfirmarDenuncia = async () => {
+    if (!detalleDenuncia.trim()) {
+      alert('Por favor redacta un detalle o descargo para tu denuncia.');
+      return;
+    }
+    setIsDenunciando(true);
+    try {
+      const res = await fetch(`http://localhost:3000/api/reportes/crear`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          denunciado_id: otherPerson.id,
+          solicitud_id: chat.id,
+          tipo_motivo: tipoMotivoDenuncia,
+          descripcion: detalleDenuncia.trim(),
+          bloquear: denunciaBloquearTambien,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al registrar denuncia');
+      }
+
+      setModalDenunciaAbierto(false);
+      setDetalleDenuncia('');
+      setFeedbackMensaje({
+        tipo: 'success',
+        texto: 'Tu denuncia ha sido radicada exitosamente y está siendo auditada por el Administrador.',
+      });
+      if (denunciaBloquearTambien) {
+        recargarHistorial();
+      }
+    } catch (err: any) {
+      console.error('Error al denunciar:', err);
+      setFeedbackMensaje({
+        tipo: 'error',
+        texto: err.message || 'Error al procesar la denuncia',
+      });
+    } finally {
+      setIsDenunciando(false);
+    }
+  };
+
+
   useEffect(() => {
     if (!llamadaEntrante) return;
 
@@ -304,6 +426,7 @@ export const ActiveConversation: React.FC<Props> = ({
     bloqueado ||
     estadoSolicitud === 'FINALIZADO' ||
     estadoSolicitud === 'DISPUTA' ||
+    estadoSolicitud === 'BLOQUEADO' ||
     chat.status === 'COMPLETADO';
 
   const avatarUri =
@@ -315,7 +438,6 @@ export const ActiveConversation: React.FC<Props> = ({
 
   const [variacion, setVariacion] = useState(0);
 
-  // Cargar sugerencias contextuales con IA
   useEffect(() => {
     if (!chat.id || estaBloqueado) return;
     let cancel = false;
@@ -398,7 +520,6 @@ export const ActiveConversation: React.FC<Props> = ({
     await responderPropuesta(mensajeId, 'REPROGRAMAR', reprogramText);
   };
 
-  // Auto-scroll hacia el final
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [mensajes, otroUsuarioEscribiendo]);
@@ -515,27 +636,115 @@ export const ActiveConversation: React.FC<Props> = ({
           </div>
         </div>
 
-        <button
-          onClick={iniciarVideollamada}
-          disabled={estaBloqueado}
-          className={`p-2 sm:p-2.5 rounded-full transition-colors cursor-pointer ${estaBloqueado
-              ? 'opacity-40 cursor-not-allowed text-gray-400'
-              : 'text-[#00BFA5] hover:bg-[#00BFA5]/10 active:scale-95'
-            }`}
-          aria-label="Iniciar videollamada"
-          title={estaBloqueado ? 'Chat cerrado' : 'Iniciar videollamada de diagnóstico'}
-        >
-          <Video className="w-5 h-5 sm:w-6 sm:h-6" />
-        </button>
+        <div className="flex items-center gap-1 sm:gap-2">
+          {!estaBloqueado && (
+            <button
+              onClick={iniciarVideollamada}
+              disabled={estaBloqueado}
+              className={`p-2 sm:p-2.5 rounded-full transition-colors cursor-pointer ${estaBloqueado
+                ? 'opacity-40 cursor-not-allowed text-gray-400'
+                : 'text-[#00BFA5] hover:bg-[#00BFA5]/10 active:scale-95'
+                }`}
+              aria-label="Iniciar videollamada"
+              title="Iniciar videollamada de diagnóstico"
+            >
+              <Video className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+          )}
+
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuSeguridadAbierto((prev) => !prev)}
+              className={`p-2 sm:p-2.5 rounded-full transition-colors cursor-pointer ${menuSeguridadAbierto
+                  ? 'bg-gray-100 dark:bg-gray-800 text-[#283593] dark:text-[#FDFCF4]'
+                  : 'text-gray-500 hover:text-[#283593] dark:hover:text-[#FDFCF4] hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              aria-label="Opciones de seguridad y reporte"
+              title="Opciones de seguridad"
+            >
+              <MoreVertical className="w-5 h-5" />
+            </button>
+
+            {menuSeguridadAbierto && (
+              <div
+                className={`absolute right-0 mt-2 w-56 rounded-2xl shadow-2xl border py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 ${isDark
+                    ? 'bg-[#1F2937] border-gray-700 text-[#FDFCF4]'
+                    : 'bg-white border-gray-100 text-gray-800'
+                  }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuSeguridadAbierto(false);
+                    setModalDenunciaAbierto(true);
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-xs sm:text-sm font-semibold flex items-center gap-2.5 hover:bg-amber-500/10 text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
+                >
+                  <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>Denunciar usuario</span>
+                </button>
+
+                {!estaBloqueado && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuSeguridadAbierto(false);
+                      setModalBloqueoAbierto(true);
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-xs sm:text-sm font-semibold flex items-center gap-2.5 hover:bg-red-500/10 text-[#EF4444] transition-colors border-t border-gray-100 dark:border-gray-700 cursor-pointer"
+                  >
+                    <Ban className="w-4 h-4 text-[#EF4444] shrink-0" />
+                    <span>Bloquear usuario</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </header>
 
+      {feedbackMensaje && (
+        <div
+          className={`px-4 py-2 text-xs font-semibold flex items-center justify-between transition-all ${feedbackMensaje.tipo === 'success'
+              ? 'bg-emerald-500/15 border-b border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+              : 'bg-red-500/15 border-b border-red-500/30 text-red-600 dark:text-red-400'
+            }`}
+        >
+          <div className="flex items-center gap-2">
+            {feedbackMensaje.tipo === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-[#EF4444] shrink-0" />
+            )}
+            <span>{feedbackMensaje.texto}</span>
+          </div>
+          <button
+            onClick={() => setFeedbackMensaje(null)}
+            className="p-1 hover:opacity-70 cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {estaBloqueado && (
-        <div className="px-4 py-2.5 bg-amber-500/10 border-b border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs sm:text-sm font-semibold flex items-center gap-2">
-          <Lock className="w-4 h-4 shrink-0" />
-          <span>
-            Chat cerrado. La solicitud se encuentra en estado{' '}
-            <strong className="font-bold">{estadoSolicitud || chat.status}</strong>. No se pueden enviar más mensajes.
-          </span>
+        <div className="px-4 py-2.5 bg-red-500/10 border-b border-red-500/20 text-red-600 dark:text-red-400 text-xs sm:text-sm font-semibold flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Ban className="w-4 h-4 shrink-0 text-[#EF4444]" />
+            <span>
+              {estadoSolicitud === 'BLOQUEADO' || bloqueado
+                ? bloqueoInfo?.es_bloqueador
+                  ? 'Has bloqueado a este usuario. La comunicación y videollamadas han sido deshabilitadas.'
+                  : 'Esta conversación ha sido bloqueada. La comunicación y videollamadas han sido deshabilitadas.'
+                : `Chat cerrado. La solicitud se encuentra en estado ${estadoSolicitud || chat.status}.`}
+            </span>
+          </div>
+          <button
+            onClick={() => setModalDenunciaAbierto(true)}
+            className="text-xs font-bold underline hover:opacity-80 shrink-0 cursor-pointer"
+          >
+            Reportar
+          </button>
         </div>
       )}
 
@@ -626,8 +835,8 @@ export const ActiveConversation: React.FC<Props> = ({
               return (
                 <div key={msg.id} className="flex justify-center my-3 w-full">
                   <div className={`flex items-center space-x-3 px-4 py-2 rounded-2xl border text-xs shadow-sm max-w-sm ${isFinalizada
-                      ? 'bg-teal-50 dark:bg-teal-950/40 border-[#00BFA5]/30 text-teal-950 dark:text-teal-200'
-                      : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200'
+                    ? 'bg-teal-50 dark:bg-teal-950/40 border-[#00BFA5]/30 text-teal-950 dark:text-teal-200'
+                    : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200'
                     }`}>
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white ${isFinalizada ? 'bg-[#00BFA5]' : 'bg-[#FF8C00]'
                       }`}>
@@ -1638,6 +1847,285 @@ export const ActiveConversation: React.FC<Props> = ({
             otherName={otherPerson.name}
             onCloseCall={finalizarVideollamada}
           />,
+          document.body
+        )}
+
+      {modalBloqueoAbierto &&
+        createPortal(
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-150 font-['Plus_Jakarta_Sans',sans-serif]">
+            <div
+              className={`w-full max-w-md rounded-3xl shadow-2xl p-6 border space-y-4 animate-in zoom-in-95 duration-150 ${isDark
+                  ? 'bg-[#121826] border-gray-800 text-[#FDFCF4]'
+                  : 'bg-white border-gray-100 text-gray-900'
+                }`}
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
+                <div className="flex items-center gap-2.5 text-[#EF4444]">
+                  <div className="w-10 h-10 rounded-2xl bg-red-500/10 flex items-center justify-center">
+                    <Ban className="w-5 h-5 text-[#EF4444]" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900 dark:text-[#FDFCF4]">
+                      Bloquear Usuario
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {otherPerson.name} ({otherPerson.profession})
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setModalBloqueoAbierto(false)}
+                  className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs sm:text-sm">
+                <p className="text-gray-600 dark:text-gray-300">
+                  Selecciona el motivo principal del bloqueo (obligatorio):
+                </p>
+
+                <div className="space-y-2">
+                  {[
+                    'Trato inadecuado o irrespetuoso',
+                    'Insistencia de contacto o cobro por fuera',
+                    'Spam o mensajes no deseados',
+                    'Desacuerdo grave o incumplimiento',
+                    'Otro motivo',
+                  ].map((motivo) => (
+                    <label
+                      key={motivo}
+                      className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all ${motivoBloqueo === motivo
+                          ? isDark
+                            ? 'bg-red-500/10 border-red-500/40 text-red-400'
+                            : 'bg-red-50 border-red-200 text-red-700 font-semibold'
+                          : isDark
+                            ? 'bg-[#1F2937] border-gray-700 text-gray-300 hover:border-gray-600'
+                            : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                        }`}
+                    >
+                      <input
+                        type="radio"
+                        name="motivoBloqueo"
+                        value={motivo}
+                        checked={motivoBloqueo === motivo}
+                        onChange={() => setMotivoBloqueo(motivo)}
+                        className="text-[#EF4444] focus:ring-[#EF4444]"
+                      />
+                      <span className="text-xs">{motivo}</span>
+                    </label>
+                  ))}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold mb-1 text-gray-600 dark:text-gray-300">
+                    Descripción o aclaración adicional (opcional):
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={detalleBloqueo}
+                    onChange={(e) => setDetalleBloqueo(e.target.value)}
+                    placeholder="Explica brevemente qué ocurrió..."
+                    className={`w-full p-2.5 text-xs rounded-xl border outline-none transition-colors ${isDark
+                        ? 'bg-[#1F2937] border-gray-700 text-white placeholder-gray-500 focus:border-[#EF4444]'
+                        : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-[#EF4444] focus:bg-white'
+                      }`}
+                  />
+                </div>
+
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-700 dark:text-amber-400 text-xs flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
+                  <p className="leading-relaxed">
+                    Al confirmar el bloqueo, se cancelará cualquier llamada en curso, la conversación quedará congelada y se notificará al Administrador.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setModalBloqueoAbierto(false)}
+                  disabled={isBloqueando}
+                  className="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-semibold text-xs hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmarBloqueo}
+                  disabled={isBloqueando || !motivoBloqueo.trim()}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isBloqueando ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Ban className="w-4 h-4" />
+                  )}
+                  <span>{isBloqueando ? 'Bloqueando...' : 'Confirmar Bloqueo'}</span>
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {modalDenunciaAbierto &&
+        createPortal(
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-150 font-['Plus_Jakarta_Sans',sans-serif]">
+            <div
+              className={`w-full max-w-lg rounded-3xl shadow-2xl p-6 border space-y-4 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto ${isDark
+                  ? 'bg-[#121826] border-gray-800 text-[#FDFCF4]'
+                  : 'bg-white border-gray-100 text-gray-900'
+                }`}
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500">
+                    <ShieldAlert className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900 dark:text-[#FDFCF4]">
+                      Denunciar Usuario
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Auditoría Disciplinaria sobre {otherPerson.name}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setModalDenunciaAbierto(false)}
+                  className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3.5 text-xs sm:text-sm">
+                <p className="text-gray-600 dark:text-gray-300">
+                  Selecciona la falta cometida según nuestras políticas de seguridad:
+                </p>
+
+                <div className="space-y-2">
+                  {[
+                    {
+                      tipo: 'PAGO_FUERA_PLATAFORMA',
+                      titulo: '💸 Intento de cobro/pago fuera de la plataforma',
+                      sub: 'Evasión de Garantía Escrow y cobros indebidos',
+                    },
+                    {
+                      tipo: 'ACOSO_O_LENGUAJE_OFENSIVO',
+                      titulo: '🤬 Lenguaje ofensivo, discriminatorio o acoso',
+                      sub: 'Insultos, amenazas o conducta impropia',
+                    },
+                    {
+                      tipo: 'INCUMPLIMIENTO_SERVICIO',
+                      titulo: '🚫 Incumplimiento injustificado del servicio',
+                      sub: 'Ausencia sin aviso, abandono o mala fe',
+                    },
+                    {
+                      tipo: 'SUPLANTACION_O_FRAUDE',
+                      titulo: '🎭 Suplantación de identidad o perfil falso',
+                      sub: 'Datos no coincidentes o documentación apócrifa',
+                    },
+                    {
+                      tipo: 'OTRO',
+                      titulo: '⚠️ Otro motivo grave',
+                      sub: 'Cualquier otra vulneración a los términos',
+                    },
+                  ].map((item) => (
+                    <label
+                      key={item.tipo}
+                      className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all ${tipoMotivoDenuncia === item.tipo
+                          ? isDark
+                            ? 'bg-amber-500/10 border-amber-500/40 text-amber-400'
+                            : 'bg-amber-50 border-amber-200 text-amber-900 font-semibold'
+                          : isDark
+                            ? 'bg-[#1F2937] border-gray-700 text-gray-300 hover:border-gray-600'
+                            : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                        }`}
+                    >
+                      <input
+                        type="radio"
+                        name="tipoMotivoDenuncia"
+                        value={item.tipo}
+                        checked={tipoMotivoDenuncia === item.tipo}
+                        onChange={() => setTipoMotivoDenuncia(item.tipo)}
+                        className="mt-0.5 text-amber-600 focus:ring-amber-500"
+                      />
+                      <div className="flex-1">
+                        <p className="text-xs font-bold leading-tight">{item.titulo}</p>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                          {item.sub}
+                        </p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold mb-1 text-gray-600 dark:text-gray-300">
+                    Descargo o relato de lo sucedido *
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={detalleDenuncia}
+                    onChange={(e) => setDetalleDenuncia(e.target.value)}
+                    placeholder="Describe con la mayor claridad posible los hechos ocurridos..."
+                    className={`w-full p-2.5 text-xs rounded-xl border outline-none transition-colors ${isDark
+                        ? 'bg-[#1F2937] border-gray-700 text-white placeholder-gray-500 focus:border-amber-500'
+                        : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-amber-500 focus:bg-white'
+                      }`}
+                  />
+                </div>
+
+                <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-gray-50 dark:bg-[#1F2937] border border-gray-200 dark:border-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={denunciaBloquearTambien}
+                    onChange={(e) => setDenunciaBloquearTambien(e.target.checked)}
+                    className="w-4 h-4 rounded text-[#EF4444] focus:ring-[#EF4444]"
+                  />
+                  <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                    Bloquear también a este usuario para no recibir más mensajes ni llamadas
+                  </span>
+                </label>
+
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 dark:text-red-400 text-xs flex items-start gap-2">
+                  <AlertOctagon className="w-4 h-4 shrink-0 mt-0.5 text-[#EF4444]" />
+                  <p className="leading-relaxed">
+                    Esta denuncia ingresará a la bandeja de <strong>Auditoría de Denuncias</strong> del Administrador con la transcripción completa del chat para la resolución de sanciones disciplinarias.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setModalDenunciaAbierto(false)}
+                  disabled={isDenunciando}
+                  className="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-semibold text-xs hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmarDenuncia}
+                  disabled={isDenunciando || !detalleDenuncia.trim()}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDenunciando ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ShieldAlert className="w-4 h-4" />
+                  )}
+                  <span>{isDenunciando ? 'Enviando...' : 'Enviar Denuncia'}</span>
+                </button>
+              </div>
+            </div>
+          </div>,
           document.body
         )}
     </div>

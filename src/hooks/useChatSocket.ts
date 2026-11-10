@@ -17,6 +17,12 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
   const [mensajes, setMensajes] = useState<MensajeChatModel[]>([]);
   const [cargando, setCargando] = useState<boolean>(() => isUUID(solicitudId));
   const [bloqueado, setBloqueado] = useState<boolean>(false);
+  const [bloqueoInfo, setBloqueoInfo] = useState<{
+    id?: string;
+    motivo?: string;
+    es_bloqueador?: boolean;
+    fecha_bloqueo?: string;
+  } | null>(null);
   const [estadoSolicitud, setEstadoSolicitud] = useState<string>('');
   const [subiendoFoto, setSubiendoFoto] = useState<boolean>(false);
   const [otroUsuarioEscribiendo, setOtroUsuarioEscribiendo] = useState<boolean>(false);
@@ -56,6 +62,9 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
         if (!ignore) {
           setBloqueado(Boolean(data.bloqueado));
           setEstadoSolicitud(data.estado_solicitud || '');
+          if (data.bloqueo_info) {
+            setBloqueoInfo(data.bloqueo_info);
+          }
 
           const mapeados: MensajeChatModel[] = (data.mensajes || []).map((m: MensajeChatModel) => ({
             id: m.id,
@@ -103,9 +112,12 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
       socket.emit('join_solicitud', { solicitud_id: solicitudId });
     });
 
-    socket.on('chat_unido', (data: { solicitud_id: string; bloqueado: boolean; estado_solicitud: string }) => {
+    socket.on('chat_unido', (data: { solicitud_id: string; bloqueado: boolean; estado_solicitud: string; bloqueo?: any }) => {
       if (data.bloqueado) {
         setBloqueado(true);
+      }
+      if (data.bloqueo) {
+        setBloqueoInfo(data.bloqueo);
       }
       setEstadoSolicitud(data.estado_solicitud || '');
     });
@@ -219,9 +231,16 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
       }
     });
 
-    socket.on('chat_bloqueado', (data: { solicitud_id: string; motivo: string }) => {
+    socket.on('chat_bloqueado', (data: { solicitud_id: string; motivo: string; bloqueador_id?: string }) => {
       setBloqueado(true);
-      alert(data.motivo || 'El chat ha sido cerrado.');
+      setEstadoSolicitud('BLOQUEADO');
+      setBloqueoInfo({
+        motivo: data.motivo,
+        es_bloqueador: data.bloqueador_id === userId,
+      });
+      setLlamadaEntrante(null);
+      setLlamadaSaliente(false);
+      setSalaUrlActiva(null);
     });
 
     socket.on('propuesta_actualizada', (data: { mensaje_id: string; contenido: string; nuevo_estado: string }) => {
@@ -549,6 +568,7 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
     mensajes,
     cargando,
     bloqueado,
+    bloqueoInfo,
     estadoSolicitud,
     subiendoFoto,
     otroUsuarioEscribiendo,
