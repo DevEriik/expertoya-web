@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import type { MensajeChatModel } from '../types/chat';
+import type { MensajeChatModel, VideoCallInvitation } from '../types/chat';
 
 const API_BASE_URL = 'http://localhost:3000';
 
@@ -20,6 +20,11 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
   const [estadoSolicitud, setEstadoSolicitud] = useState<string>('');
   const [subiendoFoto, setSubiendoFoto] = useState<boolean>(false);
   const [otroUsuarioEscribiendo, setOtroUsuarioEscribiendo] = useState<boolean>(false);
+
+  const [llamadaEntrante, setLlamadaEntrante] = useState<VideoCallInvitation | null>(null);
+  const [llamadaSaliente, setLlamadaSaliente] = useState<boolean>(false);
+  const [salaUrlActiva, setSalaUrlActiva] = useState<string | null>(null);
+
   const socketRef = useRef<Socket | null>(null);
   const typingSafetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -218,12 +223,53 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
       setBloqueado(true);
       alert(data.motivo || 'El chat ha sido cerrado.');
     });
+
     socket.on('propuesta_actualizada', (data: { mensaje_id: string; contenido: string; nuevo_estado: string }) => {
       setMensajes((prev) =>
         prev.map((m) =>
           m.id === data.mensaje_id ? { ...m, contenido: data.contenido } : m
         )
       );
+    });
+
+    socket.on('call:invite', (data: VideoCallInvitation) => {
+      console.log('📞 [Web] Invitación de videollamada recibida:', data);
+      if (data.solicitud_id === solicitudId) {
+        setLlamadaEntrante(data);
+      }
+    });
+
+    socket.on('call:ringing', () => {
+      console.log('📞 [Web] El destinatario está recibiendo la llamada...');
+    });
+
+    socket.on('call:accepted', (data: { solicitud_id: string; roomUrl: string }) => {
+      console.log('📞 [Web] Llamada aceptada, ingresando a sala:', data.roomUrl);
+      setLlamadaSaliente(false);
+      setLlamadaEntrante(null);
+      setSalaUrlActiva(data.roomUrl);
+    });
+
+    socket.on('call:rejected', (data: { reason?: string }) => {
+      console.log('📞 [Web] Llamada rechazada:', data.reason);
+      alert(data.reason || 'La videollamada fue rechazada.');
+      setLlamadaSaliente(false);
+      setLlamadaEntrante(null);
+    });
+
+    socket.on('call:ended', () => {
+      console.log('📞 [Web] Llamada finalizada por el interlocutor');
+      setSalaUrlActiva(null);
+      setLlamadaSaliente(false);
+      setLlamadaEntrante(null);
+    });
+
+    socket.on('call:error', (err: { mensaje?: string; error?: string }) => {
+      const msg = err.mensaje || err.error || 'Error al conectar videollamada';
+      console.warn('📞 [Web] Error en videollamada:', msg);
+      alert(msg);
+      setLlamadaSaliente(false);
+      setLlamadaEntrante(null);
     });
 
     socket.on('error_chat', (err: { mensaje: string }) => {
@@ -444,6 +490,61 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
     [solicitudId, token, bloqueado]
   );
 
+  const iniciarVideollamada = useCallback(async () => {
+    if (!socketRef.current || bloqueado) return;
+    try {
+      setLlamadaSaliente(true);
+      socketRef.current.emit(
+        'call:invite',
+        { solicitud_id: solicitudId },
+        (res: { ok?: boolean; error?: string; roomUrl?: string }) => {
+          if (res?.error) {
+            alert(res.error);
+            setLlamadaSaliente(false);
+          }
+        }
+      );
+    } catch (err) {
+      console.error('Error al emitir call:invite:', err);
+      setLlamadaSaliente(false);
+    }
+  }, [solicitudId, bloqueado]);
+
+  const aceptarVideollamada = useCallback((invitation: VideoCallInvitation) => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('call:accept', {
+      solicitud_id: invitation.solicitud_id,
+      roomUrl: invitation.roomUrl,
+    });
+    setLlamadaEntrante(null);
+    setSalaUrlActiva(invitation.roomUrl);
+  }, []);
+
+  const rechazarVideollamada = useCallback((invitation: VideoCallInvitation, reason?: string) => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('call:reject', {
+      solicitud_id: invitation.solicitud_id,
+      reason: reason || 'Llamada rechazada por el usuario',
+    });
+    setLlamadaEntrante(null);
+  }, []);
+
+  const cancelarLlamadaSaliente = useCallback(() => {
+    if (socketRef.current) {
+      socketRef.current.emit('call:end', { solicitud_id: solicitudId });
+    }
+    setLlamadaSaliente(false);
+  }, [solicitudId]);
+
+  const finalizarVideollamada = useCallback((duracion?: number) => {
+    if (socketRef.current) {
+      socketRef.current.emit('call:end', { solicitud_id: solicitudId, duracion });
+    }
+    setSalaUrlActiva(null);
+    setLlamadaSaliente(false);
+    setLlamadaEntrante(null);
+  }, [solicitudId]);
+
   return {
     mensajes,
     cargando,
@@ -457,5 +558,13 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
     subirArchivo,
     responderPropuesta,
     recargarHistorial,
+    llamadaEntrante,
+    llamadaSaliente,
+    salaUrlActiva,
+    iniciarVideollamada,
+    aceptarVideollamada,
+    rechazarVideollamada,
+    cancelarLlamadaSaliente,
+    finalizarVideollamada,
   };
 };

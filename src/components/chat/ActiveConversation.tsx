@@ -32,6 +32,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useChatSocket } from '../../hooks/useChatSocket';
 import { VoiceNotePlayer } from './VoiceNotePlayer';
+import VideoCallRoom from './VideoCallRoom';
 import {
   isPropuestaVisita,
   parsePropuestaVisita,
@@ -109,11 +110,77 @@ export const ActiveConversation: React.FC<Props> = ({
     enviarMensaje,
     subirArchivo,
     responderPropuesta,
+    llamadaEntrante,
+    llamadaSaliente,
+    salaUrlActiva,
+    iniciarVideollamada,
+    aceptarVideollamada,
+    rechazarVideollamada,
+    cancelarLlamadaSaliente,
+    finalizarVideollamada,
   } = useChatSocket({
     solicitudId: chat.id,
     userId: currentUserId,
     token,
   });
+
+
+  // Tono de llamada entrante en Web (Web Audio API)
+  useEffect(() => {
+    if (!llamadaEntrante) return;
+
+    let audioCtx: AudioContext | null = null;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    try {
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (AudioContextClass) {
+        audioCtx = new AudioContextClass();
+
+        const playTone = () => {
+          if (!audioCtx || audioCtx.state === 'closed') return;
+          if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+          const now = audioCtx.currentTime;
+
+          const osc1 = audioCtx.createOscillator();
+          const gain1 = audioCtx.createGain();
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(440, now);
+          gain1.gain.setValueAtTime(0.15, now);
+          gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          osc1.connect(gain1);
+          gain1.connect(audioCtx.destination);
+          osc1.start(now);
+          osc1.stop(now + 0.35);
+
+          const osc2 = audioCtx.createOscillator();
+          const gain2 = audioCtx.createGain();
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(880, now + 0.15);
+          gain2.gain.setValueAtTime(0.15, now + 0.15);
+          gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+          osc2.connect(gain2);
+          gain2.connect(audioCtx.destination);
+          osc2.start(now + 0.15);
+          osc2.stop(now + 0.55);
+        };
+
+        playTone();
+        intervalId = setInterval(playTone, 2000);
+      }
+    } catch (e) {
+      console.warn('AudioContext no inicializado:', e);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      if (audioCtx && audioCtx.state !== 'closed') {
+        audioCtx.close().catch(() => { });
+      }
+    };
+  }, [llamadaEntrante]);
 
   const [mostrarModalPropuesta, setMostrarModalPropuesta] = useState(false);
   const [formPropuesta, setFormPropuesta] = useState<{
@@ -226,8 +293,12 @@ export const ActiveConversation: React.FC<Props> = ({
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const otherPerson =
-    activeRole === 'CLIENTE' ? chat.professional : chat.client;
+  const isUserTheProfessional =
+    (user?.id && chat.professional?.id && user.id === chat.professional.id) ||
+    (user?.id && chat.client?.id && user.id !== chat.client.id) ||
+    activeRole === 'PROFESIONAL';
+
+  const otherPerson = isUserTheProfessional ? chat.client : chat.professional;
 
   const estaBloqueado =
     bloqueado ||
@@ -445,9 +516,14 @@ export const ActiveConversation: React.FC<Props> = ({
         </div>
 
         <button
-          onClick={() => alert(`Iniciando llamada segura con ${otherPerson.name}...`)}
-          className="p-2 sm:p-2.5 rounded-full text-[#00BFA5] hover:bg-[#00BFA5]/10 transition-colors cursor-pointer"
+          onClick={iniciarVideollamada}
+          disabled={estaBloqueado}
+          className={`p-2 sm:p-2.5 rounded-full transition-colors cursor-pointer ${estaBloqueado
+              ? 'opacity-40 cursor-not-allowed text-gray-400'
+              : 'text-[#00BFA5] hover:bg-[#00BFA5]/10 active:scale-95'
+            }`}
           aria-label="Iniciar videollamada"
+          title={estaBloqueado ? 'Chat cerrado' : 'Iniciar videollamada de diagnóstico'}
         >
           <Video className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
@@ -540,6 +616,50 @@ export const ActiveConversation: React.FC<Props> = ({
           </div>
         ) : (
           mensajes.map((msg) => {
+            const isCallLog = typeof msg.contenido === 'string' && msg.contenido.startsWith('📞 Videollamada');
+            if (isCallLog) {
+              const isFinalizada = msg.contenido.includes('finalizada');
+              const timeStr = new Date(msg.enviado_en).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              });
+              return (
+                <div key={msg.id} className="flex justify-center my-3 w-full">
+                  <div className={`flex items-center space-x-3 px-4 py-2 rounded-2xl border text-xs shadow-sm max-w-sm ${isFinalizada
+                      ? 'bg-teal-50 dark:bg-teal-950/40 border-[#00BFA5]/30 text-teal-950 dark:text-teal-200'
+                      : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200'
+                    }`}>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white ${isFinalizada ? 'bg-[#00BFA5]' : 'bg-[#FF8C00]'
+                      }`}>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-[11px] leading-tight">
+                        {isFinalizada ? 'Videollamada de Diagnóstico' : 'Videollamada'}
+                      </p>
+                      <p className="text-[10px] opacity-75 truncate">
+                        {msg.contenido.replace('📞 Videollamada ', '')}
+                      </p>
+                      {isFinalizada && isUserTheProfessional && (
+                        <button
+                          type="button"
+                          onClick={() => setMostrarModalPropuesta(true)}
+                          className="mt-1.5 inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-[#FF8C00] hover:bg-[#FF8C00]/90 text-white font-bold text-[10px] shadow-sm transition-transform active:scale-95 cursor-pointer"
+                        >
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span>Coordinar Visita Técnica</span>
+                        </button>
+                      )}
+                    </div>
+                    <span className="text-[10px] opacity-60 ml-1 shrink-0">{timeStr}</span>
+                  </div>
+                </div>
+              );
+            }
             const isCurrentUser = msg.remitente_id === currentUserId;
             const timeStr = new Date(msg.enviado_en).toLocaleTimeString([], {
               hour: '2-digit',
@@ -1397,6 +1517,127 @@ export const ActiveConversation: React.FC<Props> = ({
               </div>
             </div>
           </div>,
+          document.body
+        )}
+
+      {llamadaEntrante &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 font-sans">
+            <div className="bg-[#121826] border border-[#00BFA5]/40 rounded-3xl max-w-sm w-full p-6 sm:p-8 shadow-2xl text-center relative overflow-hidden">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00BFA5]/15 border border-[#00BFA5]/30 mb-6">
+                <span className="w-2 h-2 rounded-full bg-[#00BFA5] animate-ping" />
+                <span className="text-[11px] font-bold text-[#00BFA5] uppercase tracking-wider">
+                  Videollamada Entrante
+                </span>
+              </div>
+
+              <div className="relative w-28 h-28 mx-auto mb-6 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border-2 border-[#00BFA5]/40 animate-ping" />
+                <div className="absolute -inset-2 rounded-full border border-[#00BFA5]/20 animate-pulse" />
+                <img
+                  src={
+                    llamadaEntrante.caller?.avatar ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      llamadaEntrante.caller?.name || 'Usuario'
+                    )}&background=00BFA5&color=ffffff`
+                  }
+                  alt={llamadaEntrante.caller?.name}
+                  className="w-24 h-24 rounded-full object-cover border-4 border-[#00BFA5] shadow-lg relative z-10"
+                />
+              </div>
+
+              <h3 className="text-xl font-bold text-white mb-1">
+                {llamadaEntrante.caller?.name || 'Usuario ExpertoYa'}
+              </h3>
+              <p className="text-xs text-gray-400 mb-6 font-medium">
+                Diagnóstico preliminar visual en vivo
+              </p>
+
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => rechazarVideollamada(llamadaEntrante)}
+                  className="flex-1 py-3 px-4 rounded-2xl bg-[#EF4444] hover:bg-red-600 text-white font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                >
+                  <X className="w-5 h-5" />
+                  <span>Rechazar</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => aceptarVideollamada(llamadaEntrante)}
+                  className="flex-1 py-3 px-4 rounded-2xl bg-[#00BFA5] hover:bg-[#00a892] text-white font-bold text-sm shadow-lg shadow-[#00BFA5]/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                >
+                  <Video className="w-5 h-5" />
+                  <span>Aceptar</span>
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {llamadaSaliente &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 font-sans">
+            <div className="bg-[#121826] border border-[#00BFA5]/40 rounded-3xl max-w-sm w-full p-6 sm:p-8 shadow-2xl text-center relative overflow-hidden">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00BFA5]/15 border border-[#00BFA5]/30 mb-6">
+                <Loader2 className="w-3.5 h-3.5 text-[#00BFA5] animate-spin" />
+                <span className="text-[11px] font-bold text-[#00BFA5] uppercase tracking-wider">
+                  Estableciendo enlace Daily.co...
+                </span>
+              </div>
+
+              <div className="relative w-28 h-28 mx-auto mb-6 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border-2 border-[#00BFA5]/40 animate-ping" />
+                <div className="absolute -inset-2 rounded-full border border-[#00BFA5]/20 animate-pulse" />
+                <img
+                  src={
+                    otherPerson.avatar ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      otherPerson.name
+                    )}&background=00BFA5&color=ffffff`
+                  }
+                  alt={otherPerson.name}
+                  className="w-24 h-24 rounded-full object-cover border-4 border-[#00BFA5] shadow-lg relative z-10"
+                />
+              </div>
+
+              <h3 className="text-xl font-bold text-white mb-1">
+                Llamando a {otherPerson.name}...
+              </h3>
+              <p className="text-xs text-gray-400 mb-6 font-medium">
+                Esperando que conteste para iniciar el diagnóstico visual por cámara.
+              </p>
+
+              <button
+                type="button"
+                onClick={cancelarLlamadaSaliente}
+                className="w-full py-3 px-4 rounded-2xl bg-[#EF4444] hover:bg-red-600 text-white font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              >
+                <X className="w-5 h-5" />
+                <span>Cancelar</span>
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {salaUrlActiva &&
+        createPortal(
+          <VideoCallRoom
+            chatStatus={estaBloqueado ? 'closed' : 'active'}
+            roomUrl={salaUrlActiva}
+            userName={
+              user?.nombre
+                ? `${user.nombre} ${user.apellido || ''}`.trim()
+                : activeRole === 'CLIENTE'
+                  ? 'Cliente ExpertoYa'
+                  : 'Profesional ExpertoYa'
+            }
+            userRole={activeRole.toLowerCase() as 'cliente' | 'profesional'}
+            otherName={otherPerson.name}
+            onCloseCall={finalizarVideollamada}
+          />,
           document.body
         )}
     </div>
