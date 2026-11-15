@@ -189,11 +189,12 @@ export const ActiveConversation: React.FC<Props> = ({
         texto: 'Usuario bloqueado exitosamente. La comunicación ha sido deshabilitada.',
       });
       recargarHistorial();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error al bloquear:', err);
+      const msg = err instanceof Error ? err.message : 'Error al procesar el bloqueo';
       setFeedbackMensaje({
         tipo: 'error',
-        texto: err.message || 'Error al procesar el bloqueo',
+        texto: msg,
       });
     } finally {
       setIsBloqueando(false);
@@ -236,11 +237,12 @@ export const ActiveConversation: React.FC<Props> = ({
       if (denunciaBloquearTambien) {
         recargarHistorial();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error al denunciar:', err);
+      const msg = err instanceof Error ? err.message : 'Error al procesar la denuncia';
       setFeedbackMensaje({
         tipo: 'error',
-        texto: err.message || 'Error al procesar la denuncia',
+        texto: msg,
       });
     } finally {
       setIsDenunciando(false);

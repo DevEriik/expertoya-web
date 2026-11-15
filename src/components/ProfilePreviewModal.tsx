@@ -7,35 +7,45 @@ import {
   Clock,
   ShieldCheck,
   CheckCircle2,
+  Mail,
+  Phone,
+  Shield,
+  MessageSquare,
 } from "lucide-react";
 import type { ProfessionalService } from "../types/professional";
 
 interface ProfilePreviewModalProps {
   visible: boolean;
   onClose: () => void;
+  isCliente?: boolean;
   nombre: string;
   apellido: string;
+  email?: string;
+  telefono?: string;
   fotoPerfil?: string;
   bio?: string;
   zonasCobertura?: string;
   trade?: string;
   calificacion?: number;
   totalReviews?: number;
-  servicios: ProfessionalService[];
+  servicios?: ProfessionalService[];
 }
 
 export const ProfilePreviewModal: React.FC<ProfilePreviewModalProps> = ({
   visible,
   onClose,
+  isCliente = false,
   nombre,
   apellido,
+  email,
+  telefono,
   fotoPerfil,
   bio,
   zonasCobertura,
   trade = "Profesional Certificado",
   calificacion = 4.9,
   totalReviews = 310,
-  servicios,
+  servicios = [],
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -49,8 +59,8 @@ export const ProfilePreviewModal: React.FC<ProfilePreviewModalProps> = ({
 
   if (!visible) return null;
 
-  const nombreCompleto = `${nombre} ${apellido}`.trim() || "Profesional";
-  const activeServices = servicios.filter((s) => s.servicio_activo);
+  const nombreCompleto = `${nombre} ${apellido}`.trim() || (isCliente ? "Cliente" : "Profesional");
+  const activeServices = (servicios || []).filter((s) => s.servicio_activo);
 
   const avatarUrl =
     fotoPerfil ||
@@ -70,17 +80,27 @@ export const ProfilePreviewModal: React.FC<ProfilePreviewModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Banner con botón de cierre y chip de vista previa */}
-        <div className="relative h-44 sm:h-52 w-full overflow-hidden bg-gradient-to-r from-amber-500 via-primary to-orange-600">
+        <div
+          className={`relative h-44 sm:h-52 w-full overflow-hidden ${
+            isCliente
+              ? "bg-gradient-to-r from-teal-600 via-[#00BFA5] to-emerald-600"
+              : "bg-gradient-to-r from-amber-500 via-primary to-orange-600"
+          }`}
+        >
           <img
             src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=1000&auto=format&fit=crop"
-            alt="Banner profesional"
-            className="w-full h-full object-cover mix-blend-overlay opacity-50"
+            alt="Banner"
+            className="w-full h-full object-cover mix-blend-overlay opacity-40"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
 
           <div className="absolute top-4 left-4 z-10 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-black/50 text-white backdrop-blur-md border border-white/20">
-            <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-            <span>Previsualización (Vista del Cliente)</span>
+            <ShieldCheck className={`w-3.5 h-3.5 ${isCliente ? "text-[#00BFA5]" : "text-primary"}`} />
+            <span>
+              {isCliente
+                ? "Previsualización (Vista del Profesional)"
+                : "Previsualización (Vista del Cliente)"}
+            </span>
           </div>
 
           <button
@@ -103,14 +123,26 @@ export const ProfilePreviewModal: React.FC<ProfilePreviewModalProps> = ({
                 alt={nombreCompleto}
                 className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-white dark:border-dark-surface shadow-xl"
               />
-              <div className="absolute bottom-1 right-1 w-7 h-7 rounded-full bg-emerald-500 border-2 border-white dark:border-dark-surface flex items-center justify-center text-white">
+              <div
+                className={`absolute bottom-1 right-1 w-7 h-7 rounded-full border-2 border-white dark:border-dark-surface flex items-center justify-center text-white ${
+                  isCliente ? "bg-[#00BFA5]" : "bg-emerald-500"
+                }`}
+              >
                 <BadgeCheck className="w-4 h-4" />
               </div>
             </div>
 
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+            <div
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border ${
+                isCliente
+                  ? "bg-teal-50 dark:bg-teal-950/40 text-[#00BFA5] border-teal-200 dark:border-teal-800"
+                  : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+              }`}
+            >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Garantía ExpertoYa Activa</span>
+              <span>
+                {isCliente ? "Cuenta de Cliente Verificada" : "Garantía ExpertoYa Activa"}
+              </span>
             </div>
           </div>
 
@@ -119,98 +151,169 @@ export const ProfilePreviewModal: React.FC<ProfilePreviewModalProps> = ({
               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                 {nombreCompleto}
               </h2>
-              <div className="inline-flex items-center gap-1 text-sm font-black text-amber-500 justify-center sm:justify-start">
-                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                <span>{calificacion.toFixed(1)}</span>
-                <span className="text-xs text-slate-400 font-semibold">
-                  ({totalReviews} opiniones)
-                </span>
-              </div>
+              {!isCliente && (
+                <div className="inline-flex items-center gap-1 text-sm font-black text-amber-500 justify-center sm:justify-start">
+                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  <span>{calificacion.toFixed(1)}</span>
+                  <span className="text-xs text-slate-400 font-semibold">
+                    ({totalReviews} opiniones)
+                  </span>
+                </div>
+              )}
             </div>
 
-            <p className="text-sm font-bold text-primary">{trade}</p>
+            <p className={`text-sm font-bold ${isCliente ? "text-[#00BFA5]" : "text-primary"}`}>
+              {isCliente ? "Cliente de ExpertoYa • Pagos Protegidos por Escrow" : trade}
+            </p>
 
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-slate-500 dark:text-gray-400 pt-1">
-              <div className="flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                <span>{zonasCobertura || "Buenos Aires, CABA y GBA"}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
-                <span>Responde en menos de 15 minutos</span>
-              </div>
+              {isCliente ? (
+                <>
+                  {email && (
+                    <div className="flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{email}</span>
+                    </div>
+                  )}
+                  {telefono && (
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{telefono}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-[#00BFA5]" />
+                    <span>Identidad Verificada</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{zonasCobertura || "Buenos Aires, CABA y GBA"}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Responde en menos de 15 minutos</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
 
         {/* Scrollable Details */}
         <div className="p-6 sm:p-8 pt-0 space-y-6 max-h-[50vh] overflow-y-auto">
-          {/* Biografía */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-dark-bg border border-slate-200/80 dark:border-gray-800">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500 mb-2">
-              Acerca del Profesional
-            </h3>
-            <p className="text-sm leading-relaxed text-slate-700 dark:text-gray-200 whitespace-pre-line">
-              {bio ||
-                "Profesional comprometido con la excelencia, puntualidad y satisfacción en cada trabajo realizado bajo estrictas normas de seguridad."}
-            </p>
-          </div>
-
-          {/* Servicios Ofrecidos */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-extrabold uppercase tracking-wider text-primary">
-                Servicios Disponibles ({activeServices.length})
-              </h3>
-            </div>
-
-            {activeServices.length === 0 ? (
-              <div className="p-6 text-center text-sm font-medium text-slate-400 border border-dashed rounded-2xl">
-                Aún no has publicado servicios activos.
+          {isCliente ? (
+            /* Vista del Profesional hacia el Cliente */
+            <div className="space-y-4">
+              <div className="p-5 rounded-2xl bg-teal-50/60 dark:bg-teal-950/20 border border-teal-200/80 dark:border-teal-800/60">
+                <div className="flex items-center gap-2 mb-2">
+                  <ShieldCheck className="w-5 h-5 text-[#00BFA5]" />
+                  <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                    Vista que recibe el Profesional
+                  </h3>
+                </div>
+                <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-gray-300">
+                  Así es como los profesionales ven tu perfil cuando solicitas un servicio o te comunicas a través del chat. Esta información les permite identificarte con confianza y coordinar los detalles del trabajo.
+                </p>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {activeServices.map((srv) => (
-                  <div
-                    key={srv.id}
-                    className="p-4 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-dark-surface flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-primary border border-amber-200/40">
-                          {srv.nombre_oficio || "Oficio"}
-                        </span>
-                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                          {srv.titulo_servicio}
-                        </h4>
-                      </div>
-                      <p className="text-xs text-slate-500 dark:text-gray-400 line-clamp-2">
-                        {srv.descripcion_servicio}
-                      </p>
-                    </div>
 
-                    <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-gray-800">
-                      <div className="text-right">
-                        <div className="text-base font-black text-primary">
-                          ${Number(srv.costo_estimado).toLocaleString()} ARS
-                        </div>
-                        <div className="text-[11px] text-slate-400 flex items-center justify-end gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span>{srv.duracion_estimada || "A convenir"}</span>
-                        </div>
-                      </div>
-                    </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-dark-bg border border-slate-200/80 dark:border-gray-800 space-y-1.5">
+                  <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider">
+                    <Shield className="w-4 h-4" />
+                    <span>Pagos en Custodia (Escrow)</span>
                   </div>
-                ))}
+                  <p className="text-xs leading-relaxed text-slate-600 dark:text-gray-400">
+                    El profesional sabe que tus contrataciones están respaldadas por fondos en custodia, asegurando el cobro en cuanto el trabajo sea finalizado y aprobado.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-dark-bg border border-slate-200/80 dark:border-gray-800 space-y-1.5">
+                  <div className="flex items-center gap-2 text-[#00BFA5] font-bold text-xs uppercase tracking-wider">
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Canal de Chat Seguro</span>
+                  </div>
+                  <p className="text-xs leading-relaxed text-slate-600 dark:text-gray-400">
+                    Tus solicitudes incluyen chat en tiempo real para acordar presupuestos, fechas y especificaciones técnicas de forma transparente.
+                  </p>
+                </div>
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            /* Vista del Cliente hacia el Profesional */
+            <>
+              {/* Biografía */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-dark-bg border border-slate-200/80 dark:border-gray-800">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-gray-500 mb-2">
+                  Acerca del Profesional
+                </h3>
+                <p className="text-sm leading-relaxed text-slate-700 dark:text-gray-200 whitespace-pre-line">
+                  {bio ||
+                    "Profesional comprometido con la excelencia, puntualidad y satisfacción en cada trabajo realizado bajo estrictas normas de seguridad."}
+                </p>
+              </div>
+
+              {/* Servicios Ofrecidos */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-extrabold uppercase tracking-wider text-primary">
+                    Servicios Disponibles ({activeServices.length})
+                  </h3>
+                </div>
+
+                {activeServices.length === 0 ? (
+                  <div className="p-6 text-center text-sm font-medium text-slate-400 border border-dashed rounded-2xl">
+                    Aún no has publicado servicios activos.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {activeServices.map((srv) => (
+                      <div
+                        key={srv.id}
+                        className="p-4 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-dark-surface flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-primary border border-amber-200/40">
+                              {srv.nombre_oficio || "Oficio"}
+                            </span>
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                              {srv.titulo_servicio}
+                            </h4>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-gray-400 line-clamp-2">
+                            {srv.descripcion_servicio}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-gray-800">
+                          <div className="text-right">
+                            <div className="text-base font-black text-primary">
+                              ${Number(srv.costo_estimado).toLocaleString()} ARS
+                            </div>
+                            <div className="text-[11px] text-slate-400 flex items-center justify-end gap-1">
+                              <Clock className="w-3 h-3" />
+                              <span>{srv.duracion_estimada || "A convenir"}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-between p-5 border-t border-slate-100 dark:border-gray-800 bg-slate-50/60 dark:bg-dark-bg/40">
           <p className="text-xs text-slate-400 dark:text-gray-500">
-            Los clientes pueden contactarte y contratar directamente estos servicios.
+            {isCliente
+              ? "Esta es la información que los profesionales visualizan de tu cuenta."
+              : "Los clientes pueden contactarte y contratar directamente estos servicios."}
           </p>
 
           <button

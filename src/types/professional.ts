@@ -9,10 +9,13 @@ export interface Professional {
   estado_validado: boolean;
   estado_auditoria: string;
   calificacion_promedio: number;
+  totalResenas?: number;
+  total_resenas?: number;
   ubicacion_geografica: string | null;
   latitud: number | null;
   longitud: number | null;
   descripcion_perfil: string | null;
+  experiencia?: number | null;
   oficios: Oficio[];
   usuario: {
     id: string;

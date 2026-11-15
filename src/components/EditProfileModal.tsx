@@ -30,6 +30,7 @@ interface EditProfileModalProps {
   visible: boolean;
   onClose: () => void;
   onProfileUpdated: () => void;
+  isCliente?: boolean;
   initialData: {
     nombre: string;
     apellido: string;
@@ -46,12 +47,14 @@ interface EditProfileModalProps {
 interface EditProfileFormContentProps {
   onClose: () => void;
   onProfileUpdated: () => void;
+  isCliente?: boolean;
   initialData: EditProfileModalProps["initialData"];
 }
 
 const EditProfileFormContent: React.FC<EditProfileFormContentProps> = ({
   onClose,
   onProfileUpdated,
+  isCliente = false,
   initialData,
 }) => {
   // Datos personales y básicos inicializados en mount (sin cascading renders)
@@ -82,7 +85,7 @@ const EditProfileFormContent: React.FC<EditProfileFormContentProps> = ({
 
   // Franja horaria de atención
   const [dias, setDias] = useState<DiaSemanaItem[]>(DIAS_SEMANA_DEFAULT);
-  const [loadingAvailability, setLoadingAvailability] = useState(true);
+  const [loadingAvailability, setLoadingAvailability] = useState(!isCliente);
 
   // Estados generales de guardado y feedback
   const [saving, setSaving] = useState(false);
@@ -133,6 +136,9 @@ const EditProfileFormContent: React.FC<EditProfileFormContentProps> = ({
 
   // Cargar catálogo y disponibilidad al montar de forma asíncrona
   useEffect(() => {
+    if (isCliente) {
+      return;
+    }
     const initData = async () => {
       const token = localStorage.getItem("token");
       const apiBase = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -170,7 +176,7 @@ const EditProfileFormContent: React.FC<EditProfileFormContentProps> = ({
     };
 
     void initData();
-  }, [fetchAvailability]);
+  }, [fetchAvailability, isCliente]);
 
   // Detectar oficios nuevos seleccionados que requieren matrícula habilitante
   const newOficiosRequiringLicense = useMemo(() => {
@@ -295,6 +301,42 @@ const EditProfileFormContent: React.FC<EditProfileFormContentProps> = ({
       return;
     }
 
+    if (isCliente) {
+      setSaving(true);
+      try {
+        const token = localStorage.getItem("token");
+        const apiBase = import.meta.env.VITE_API_URL || "http://localhost:3000";
+        const resProfile = await fetch(`${apiBase}/api/auth/profile`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            nombre: nombre.trim(),
+            apellido: apellido.trim(),
+            telefono: telefono.trim(),
+          }),
+        });
+
+        if (!resProfile.ok) {
+          const errorData = await resProfile.json().catch(() => ({}));
+          throw new Error(
+            (errorData as { error?: string }).error || "No se pudo actualizar el perfil en la base de datos."
+          );
+        }
+
+        onProfileUpdated();
+        onClose();
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Ocurrió un error al guardar los cambios.";
+        setError(msg);
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     if (selectedOficios.length === 0) {
       setError("Debes seleccionar al menos un oficio o especialidad para tu perfil.");
       return;
@@ -413,10 +455,12 @@ const EditProfileFormContent: React.FC<EditProfileFormContentProps> = ({
       <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-gray-800 bg-slate-50/70 dark:bg-dark-bg/50">
         <div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-            Editar Perfil Profesional
+            {isCliente ? "Editar Mi Perfil" : "Editar Perfil Profesional"}
           </h2>
           <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
-            Configura tus oficios, franja horaria, zonas de cobertura y estado de actividad.
+            {isCliente
+              ? "Actualiza tu información personal y datos de contacto."
+              : "Configura tus oficios, franja horaria, zonas de cobertura y estado de actividad."}
           </p>
         </div>
 
@@ -442,65 +486,67 @@ const EditProfileFormContent: React.FC<EditProfileFormContentProps> = ({
         )}
 
         {/* 1. SECCIÓN: BOTÓN DE PAUSA PARA EL PERFIL */}
-        <div
-          className={`p-5 rounded-2xl border transition-all duration-200 ${
-            isPaused
-              ? "bg-amber-50/80 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800"
-              : "bg-slate-50 dark:bg-dark-bg border-slate-200 dark:border-gray-800"
-          }`}
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <div
-                className={`w-11 h-11 rounded-2xl flex items-center justify-center ${
-                  isPaused
-                    ? "bg-amber-500 text-white shadow-md shadow-amber-500/20"
-                    : "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
-                }`}
+        {!isCliente && (
+          <div
+            className={`p-5 rounded-2xl border transition-all duration-200 ${
+              isPaused
+                ? "bg-amber-50/80 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800"
+                : "bg-slate-50 dark:bg-dark-bg border-slate-200 dark:border-gray-800"
+            }`}
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div
+                  className={`w-11 h-11 rounded-2xl flex items-center justify-center ${
+                    isPaused
+                      ? "bg-amber-500 text-white shadow-md shadow-amber-500/20"
+                      : "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+                  }`}
+                >
+                  {isPaused ? (
+                    <PauseCircle className="w-6 h-6" />
+                  ) : (
+                    <PlayCircle className="w-6 h-6" />
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-black text-slate-900 dark:text-white">
+                      Pausar perfil temporalmente
+                    </span>
+                    <span
+                      className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                        isPaused
+                          ? "bg-amber-200/80 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200"
+                          : "bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200"
+                      }`}
+                    >
+                      {isPaused ? "Perfil Pausado" : "Perfil Activo"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                    {isPaused
+                      ? "Tu perfil no aparecerá en las búsquedas ni en el mapa hasta que lo despauses."
+                      : "Tu perfil está visible para recibir nuevas solicitudes de clientes."}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsPaused(!isPaused)}
+                className="cursor-pointer transition-transform active:scale-95 p-1"
+                aria-label="Alternar pausa del perfil"
               >
                 {isPaused ? (
-                  <PauseCircle className="w-6 h-6" />
+                  <ToggleRight className="w-10 h-10 text-amber-500" />
                 ) : (
-                  <PlayCircle className="w-6 h-6" />
+                  <ToggleLeft className="w-10 h-10 text-slate-400 dark:text-gray-600 hover:text-slate-500" />
                 )}
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-black text-slate-900 dark:text-white">
-                    Pausar perfil temporalmente
-                  </span>
-                  <span
-                    className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
-                      isPaused
-                        ? "bg-amber-200/80 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200"
-                        : "bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200"
-                    }`}
-                  >
-                    {isPaused ? "Perfil Pausado" : "Perfil Activo"}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
-                  {isPaused
-                    ? "Tu perfil no aparecerá en las búsquedas ni en el mapa hasta que lo despauses."
-                    : "Tu perfil está visible para recibir nuevas solicitudes de clientes."}
-                </p>
-              </div>
+              </button>
             </div>
-
-            <button
-              type="button"
-              onClick={() => setIsPaused(!isPaused)}
-              className="cursor-pointer transition-transform active:scale-95 p-1"
-              aria-label="Alternar pausa del perfil"
-            >
-              {isPaused ? (
-                <ToggleRight className="w-10 h-10 text-amber-500" />
-              ) : (
-                <ToggleLeft className="w-10 h-10 text-slate-400 dark:text-gray-600 hover:text-slate-500" />
-              )}
-            </button>
           </div>
-        </div>
+        )}
 
         {/* 2. SECCIÓN: DATOS BÁSICOS */}
         <div className="space-y-4">
@@ -562,32 +608,36 @@ const EditProfileFormContent: React.FC<EditProfileFormContentProps> = ({
             />
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-gray-300">
-                Biografía Profesional
-              </label>
-              <span className="text-xs text-slate-400 dark:text-gray-500 font-medium">
-                {bio.length}/300
-              </span>
+          {!isCliente && (
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-gray-300">
+                  Biografía Profesional
+                </label>
+                <span className="text-xs text-slate-400 dark:text-gray-500 font-medium">
+                  {bio.length}/300
+                </span>
+              </div>
+              <textarea
+                rows={3}
+                maxLength={300}
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Cuéntales a tus potenciales clientes sobre tu formación, trayectoria y garantía de trabajo..."
+                className="w-full px-4 py-2.5 rounded-xl border text-sm font-normal leading-relaxed transition-all outline-none
+                  bg-slate-50 dark:bg-dark-bg
+                  text-slate-900 dark:text-white
+                  border-slate-300 dark:border-gray-700
+                  focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
             </div>
-            <textarea
-              rows={3}
-              maxLength={300}
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder="Cuéntales a tus potenciales clientes sobre tu formación, trayectoria y garantía de trabajo..."
-              className="w-full px-4 py-2.5 rounded-xl border text-sm font-normal leading-relaxed transition-all outline-none
-                bg-slate-50 dark:bg-dark-bg
-                text-slate-900 dark:text-white
-                border-slate-300 dark:border-gray-700
-                focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
+          )}
         </div>
 
-        {/* 3. SECCIÓN: BOTONES PARA PONER OFICIOS Y SUBIR MATRÍCULA */}
-        <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-gray-800">
+        {!isCliente && (
+          <>
+            {/* 3. SECCIÓN: BOTONES PARA PONER OFICIOS Y SUBIR MATRÍCULA */}
+            <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-gray-800">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-2">
@@ -921,6 +971,8 @@ const EditProfileFormContent: React.FC<EditProfileFormContentProps> = ({
             </div>
           )}
         </div>
+        </>
+        )}
 
         {/* Footer Actions */}
         <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100 dark:border-gray-800">
@@ -957,6 +1009,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   visible,
   onClose,
   onProfileUpdated,
+  isCliente,
   initialData,
 }) => {
   if (!visible) return null;
@@ -969,9 +1022,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       onClick={onClose}
     >
       <EditProfileFormContent
-        key={`${initialData.nombre}-${initialData.apellido}-${initialData.disponible}`}
+        key={`${initialData.nombre}-${initialData.apellido}-${initialData.disponible}-${isCliente}`}
         onClose={onClose}
         onProfileUpdated={onProfileUpdated}
+        isCliente={isCliente}
         initialData={initialData}
       />
     </div>

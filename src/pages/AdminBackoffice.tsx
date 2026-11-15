@@ -175,7 +175,9 @@ export interface ModalAuditData {
   };
 }
 
-export const MOTIVO_LABELS: Record<
+type SancionTipo = "ADVERTENCIA" | "SUSPENSION_TEMPORAL" | "EXPULSION_DEFINITIVA" | "NINGUNA";
+
+const MOTIVO_LABELS: Record<
   string,
   { label: string; icon: string; desc: string }
 > = {
@@ -206,7 +208,7 @@ export const MOTIVO_LABELS: Record<
   },
 };
 
-export const formatearFecha = (fechaStr: string) => {
+const formatearFecha = (fechaStr: string) => {
   try {
     const d = new Date(fechaStr);
     return d.toLocaleString("es-AR", {
@@ -289,9 +291,7 @@ export const AdminBackoffice = () => {
 
   // Modal de Resolución de Denuncia
   const [modalResolver, setModalResolver] = useState<ReporteItem | null>(null);
-  const [sancionSeleccionada, setSancionSeleccionada] = useState<
-    "ADVERTENCIA" | "SUSPENSION_TEMPORAL" | "EXPULSION_DEFINITIVA" | "NINGUNA"
-  >("ADVERTENCIA");
+  const [sancionSeleccionada, setSancionSeleccionada] = useState<SancionTipo>("ADVERTENCIA");
   const [resolucionTexto, setResolucionTexto] = useState<string>("");
   const [isResolving, setIsResolving] = useState<boolean>(false);
 
@@ -440,6 +440,7 @@ export const AdminBackoffice = () => {
   };
 
   // Inicialización de WebSockets para alertas en vivo al Backoffice
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -454,37 +455,36 @@ export const AdminBackoffice = () => {
       socket.emit("join_solicitud", { solicitud_id: "admins" });
     });
 
-    socket.on("admin:nuevo_reporte", (data: any) => {
+    socket.on("admin:nuevo_reporte", (data: { tipo_motivo?: string }) => {
       setToastMessage({
         tipo: "error",
-        texto: `⚠️ Nueva denuncia registrada: ${MOTIVO_LABELS[data?.tipo_motivo]?.label || "Reporte de usuario"
+        texto: `⚠️ Nueva denuncia registrada: ${MOTIVO_LABELS[data?.tipo_motivo || ""]?.label || "Reporte de usuario"
           }.`,
       });
       setReportesPendientesCount((prev) => prev + 1);
-      cargarReportes();
+      void cargarReportes();
     });
 
-    socket.on("admin:alerta_bloqueo", (data: any) => {
+    socket.on("admin:alerta_bloqueo", (data: { motivo?: string }) => {
       setToastMessage({
         tipo: "error",
         texto: `🚫 Alerta de bloqueo bilateral registrado: ${data?.motivo || ""}.`,
       });
-      cargarBloqueos();
+      void cargarBloqueos();
     });
 
     socket.on("admin:reporte_resuelto", () => {
-      cargarReportes();
+      void cargarReportes();
     });
 
-    cargarReportes();
-    cargarBloqueos();
+    void cargarReportes();
+    void cargarBloqueos();
 
     return () => {
       socket.disconnect();
     };
   }, []);
 
-  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     if (activeTab === "REPORTES") {
       cargarReportes();
@@ -537,7 +537,7 @@ export const AdminBackoffice = () => {
     setModalResolver(rep);
     setSancionSeleccionada(
       rep.sancion_aplicada && rep.sancion_aplicada !== "NINGUNA"
-        ? (rep.sancion_aplicada as any)
+        ? (rep.sancion_aplicada as SancionTipo)
         : "ADVERTENCIA",
     );
     setResolucionTexto(rep.resolucion_admin || "");
@@ -586,10 +586,11 @@ export const AdminBackoffice = () => {
           texto: err.error || "No se pudo resolver la denuncia.",
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error al conectar con el servidor.";
       setToastMessage({
         tipo: "error",
-        texto: err.message || "Error al conectar con el servidor.",
+        texto: msg,
       });
     } finally {
       setIsResolving(false);
@@ -2281,7 +2282,7 @@ export const AdminBackoffice = () => {
                     ].map((op) => (
                       <div
                         key={op.id}
-                        onClick={() => setSancionSeleccionada(op.id as any)}
+                        onClick={() => setSancionSeleccionada(op.id as SancionTipo)}
                         className={`p-3.5 rounded-2xl border text-xs cursor-pointer transition ${sancionSeleccionada === op.id
                             ? op.active
                             : `border-gray-200 bg-white text-gray-700 ${op.border}`
