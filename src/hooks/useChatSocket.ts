@@ -112,7 +112,7 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
       socket.emit('join_solicitud', { solicitud_id: solicitudId });
     });
 
-    socket.on('chat_unido', (data: { solicitud_id: string; bloqueado: boolean; estado_solicitud: string; bloqueo?: any }) => {
+    socket.on('chat_unido', (data: { solicitud_id: string; bloqueado: boolean; estado_solicitud: string; bloqueo?: { id?: string; motivo?: string; es_bloqueador?: boolean; bloqueador_id?: string } }) => {
       if (data.bloqueado) {
         setBloqueado(true);
       }

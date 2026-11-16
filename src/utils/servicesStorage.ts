@@ -59,7 +59,7 @@ export const getServices = async (): Promise<ProfessionalService[]> => {
       });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           inMemoryServices = data;
           await persistServices(data);
           return [...data];
@@ -88,9 +88,8 @@ export const getServices = async (): Promise<ProfessionalService[]> => {
     console.warn("Error leyendo servicios del almacenamiento local:", err);
   }
 
-  inMemoryServices = [...DEFAULT_SERVICES];
-  await persistServices(inMemoryServices);
-  return [...inMemoryServices];
+  inMemoryServices = [];
+  return [];
 };
 
 export const saveService = async (
