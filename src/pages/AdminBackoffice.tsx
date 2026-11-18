@@ -24,6 +24,10 @@ import {
 } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "../context/AuthContext";
+import {
+  AdminDisputasTab,
+  type DisputaAdminItem,
+} from "../components/admin/AdminDisputasTab";
 
 interface ProfesionalAuditoria {
   id: string;
@@ -59,7 +63,11 @@ export interface ReporteItem {
   descripcion: string;
   captura_url: string | null;
   estado: "PENDIENTE" | "EN_REVISION" | "RESUELTO_CON_SANCION" | "DESESTIMADO";
-  sancion_aplicada: "ADVERTENCIA" | "SUSPENSION_TEMPORAL" | "EXPULSION_DEFINITIVA" | "NINGUNA";
+  sancion_aplicada:
+    | "ADVERTENCIA"
+    | "SUSPENSION_TEMPORAL"
+    | "EXPULSION_DEFINITIVA"
+    | "NINGUNA";
   resolucion_admin: string | null;
   revisado_por: string | null;
   creado_en: string;
@@ -175,7 +183,11 @@ export interface ModalAuditData {
   };
 }
 
-type SancionTipo = "ADVERTENCIA" | "SUSPENSION_TEMPORAL" | "EXPULSION_DEFINITIVA" | "NINGUNA";
+type SancionTipo =
+  | "ADVERTENCIA"
+  | "SUSPENSION_TEMPORAL"
+  | "EXPULSION_DEFINITIVA"
+  | "NINGUNA";
 
 const MOTIVO_LABELS: Record<
   string,
@@ -228,7 +240,8 @@ type TabType =
   | "APROBADO"
   | "RECHAZADO"
   | "REPORTES"
-  | "BLOQUEOS";
+  | "BLOQUEOS"
+  | "DISPUTAS";
 
 interface RejectModalData {
   id: string;
@@ -275,8 +288,10 @@ export const AdminBackoffice = () => {
   // Estados de Denuncias y Reportes
   const [reportes, setReportes] = useState<ReporteItem[]>([]);
   const [totalReportes, setTotalReportes] = useState<number>(0);
-  const [reportesPendientesCount, setReportesPendientesCount] = useState<number>(0);
-  const [filtroEstadoReporte, setFiltroEstadoReporte] = useState<string>("TODOS");
+  const [reportesPendientesCount, setReportesPendientesCount] =
+    useState<number>(0);
+  const [filtroEstadoReporte, setFiltroEstadoReporte] =
+    useState<string>("TODOS");
   const [cargandoReportes, setCargandoReportes] = useState<boolean>(false);
 
   // Estados de Bitácora de Bloqueos
@@ -285,13 +300,23 @@ export const AdminBackoffice = () => {
   const [reincidentes, setReincidentes] = useState<ReincidenteUser[]>([]);
   const [cargandoBloqueos, setCargandoBloqueos] = useState<boolean>(false);
 
+  // Estados de Disputas y Reembolsos
+  const [disputas, setDisputas] = useState<DisputaAdminItem[]>([]);
+  const [disputasAbiertasCount, setDisputasAbiertasCount] = useState<number>(0);
+  const [filtroEstadoDisputa, setFiltroEstadoDisputa] =
+    useState<string>("TODOS");
+  const [cargandoDisputas, setCargandoDisputas] = useState<boolean>(false);
+
   // Modal de Auditoría de Chat
-  const [modalAuditChat, setModalAuditChat] = useState<ModalAuditData | null>(null);
+  const [modalAuditChat, setModalAuditChat] = useState<ModalAuditData | null>(
+    null,
+  );
   const [cargandoAuditChat, setCargandoAuditChat] = useState<boolean>(false);
 
   // Modal de Resolución de Denuncia
   const [modalResolver, setModalResolver] = useState<ReporteItem | null>(null);
-  const [sancionSeleccionada, setSancionSeleccionada] = useState<SancionTipo>("ADVERTENCIA");
+  const [sancionSeleccionada, setSancionSeleccionada] =
+    useState<SancionTipo>("ADVERTENCIA");
   const [resolucionTexto, setResolucionTexto] = useState<string>("");
   const [isResolving, setIsResolving] = useState<boolean>(false);
 
@@ -439,6 +464,36 @@ export const AdminBackoffice = () => {
     }
   };
 
+  const cargarDisputas = async () => {
+    setCargandoDisputas(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const q =
+        filtroEstadoDisputa !== "TODOS" ? `?estado=${filtroEstadoDisputa}` : "";
+      const res = await fetch(
+        `http://localhost:3000/api/disputas/admin/todas${q}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        const lista: DisputaAdminItem[] = data.disputas || [];
+        setDisputas(lista);
+        setDisputasAbiertasCount(
+          lista.filter((d) => d.estado === "ABIERTA").length,
+        );
+      }
+    } catch (err) {
+      console.error("Error al cargar disputas:", err);
+    } finally {
+      setCargandoDisputas(false);
+    }
+  };
+
   // Inicialización de WebSockets para alertas en vivo al Backoffice
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
@@ -458,8 +513,9 @@ export const AdminBackoffice = () => {
     socket.on("admin:nuevo_reporte", (data: { tipo_motivo?: string }) => {
       setToastMessage({
         tipo: "error",
-        texto: `⚠️ Nueva denuncia registrada: ${MOTIVO_LABELS[data?.tipo_motivo || ""]?.label || "Reporte de usuario"
-          }.`,
+        texto: `⚠️ Nueva denuncia registrada: ${
+          MOTIVO_LABELS[data?.tipo_motivo || ""]?.label || "Reporte de usuario"
+        }.`,
       });
       setReportesPendientesCount((prev) => prev + 1);
       void cargarReportes();
@@ -477,6 +533,17 @@ export const AdminBackoffice = () => {
       void cargarReportes();
     });
 
+    socket.on("admin:nueva_disputa", (data: { motivo?: string }) => {
+      setToastMessage({
+        tipo: "error",
+        texto: `🚨 Nueva disputa abierta: ${data?.motivo || "Reclamo de pago en custodia"}.`,
+      });
+      setDisputasAbiertasCount((prev) => prev + 1);
+      void cargarDisputas();
+    });
+
+    void cargarDisputas();
+
     void cargarReportes();
     void cargarBloqueos();
 
@@ -490,11 +557,12 @@ export const AdminBackoffice = () => {
       cargarReportes();
     } else if (activeTab === "BLOQUEOS") {
       cargarBloqueos();
+    } else if (activeTab === "DISPUTAS") {
+      cargarDisputas();
     } else {
       cargarProfesionales(activeTab);
     }
-  }, [activeTab, filtroEstadoReporte]);
-  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  }, [activeTab, filtroEstadoReporte, filtroEstadoDisputa]);
 
   const abrirModalAuditoria = async (rep: ReporteItem) => {
     setCargandoAuditChat(true);
@@ -587,7 +655,10 @@ export const AdminBackoffice = () => {
         });
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error al conectar con el servidor.";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Error al conectar con el servidor.";
       setToastMessage({
         tipo: "error",
         texto: msg,
@@ -804,30 +875,33 @@ export const AdminBackoffice = () => {
         <div className="flex items-center gap-2 border-b border-gray-200 mb-6 overflow-x-auto pb-1">
           <button
             onClick={() => setActiveTab("PENDIENTE")}
-            className={`pb-3 px-4 text-sm font-bold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${activeTab === "PENDIENTE"
+            className={`pb-3 px-4 text-sm font-bold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+              activeTab === "PENDIENTE"
                 ? "border-primary text-primary"
                 : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
+            }`}
           >
             <ShieldCheck size={16} />
             Solicitantes
           </button>
           <button
             onClick={() => setActiveTab("APROBADO")}
-            className={`pb-3 px-4 text-sm font-bold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${activeTab === "APROBADO"
+            className={`pb-3 px-4 text-sm font-bold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+              activeTab === "APROBADO"
                 ? "border-emerald-600 text-emerald-600"
                 : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
+            }`}
           >
             <CheckCircle size={16} />
             Auditados
           </button>
           <button
             onClick={() => setActiveTab("RECHAZADO")}
-            className={`pb-3 px-4 text-sm font-bold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${activeTab === "RECHAZADO"
+            className={`pb-3 px-4 text-sm font-bold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+              activeTab === "RECHAZADO"
                 ? "border-rose-600 text-rose-600"
                 : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
+            }`}
           >
             <XCircle size={16} />
             Rechazados
@@ -837,10 +911,11 @@ export const AdminBackoffice = () => {
 
           <button
             onClick={() => setActiveTab("REPORTES")}
-            className={`pb-3 px-4 text-sm font-bold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${activeTab === "REPORTES"
+            className={`pb-3 px-4 text-sm font-bold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+              activeTab === "REPORTES"
                 ? "border-rose-500 text-rose-600"
                 : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
+            }`}
           >
             <ShieldAlert size={16} />
             Denuncias y Reportes
@@ -853,10 +928,11 @@ export const AdminBackoffice = () => {
 
           <button
             onClick={() => setActiveTab("BLOQUEOS")}
-            className={`pb-3 px-4 text-sm font-bold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${activeTab === "BLOQUEOS"
+            className={`pb-3 px-4 text-sm font-bold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+              activeTab === "BLOQUEOS"
                 ? "border-amber-600 text-amber-700"
                 : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
+            }`}
           >
             <Ban size={16} />
             Registro de Bloqueos
@@ -866,322 +942,346 @@ export const AdminBackoffice = () => {
               </span>
             )}
           </button>
+
+          <button
+            onClick={() => setActiveTab("DISPUTAS")}
+            className={`pb-3 px-4 text-sm font-bold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+              activeTab === "DISPUTAS"
+                ? "border-rose-600 text-rose-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <Scale size={16} />
+            Disputas y Reembolsos
+            {disputasAbiertasCount > 0 && (
+              <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-bold bg-[#EF4444] text-white animate-pulse">
+                {disputasAbiertasCount}
+              </span>
+            )}
+          </button>
+
         </div>
 
         {(activeTab === "PENDIENTE" ||
           activeTab === "APROBADO" ||
           activeTab === "RECHAZADO") && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              {cargando ? (
-                <p className="p-12 text-center text-gray-500 font-medium">
-                  Cargando legajos...
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            {cargando ? (
+              <p className="p-12 text-center text-gray-500 font-medium">
+                Cargando legajos...
+              </p>
+            ) : profesionales.length === 0 ? (
+              <div className="p-12 text-center">
+                <CheckCircle className="mx-auto text-success mb-3" size={40} />
+                <p className="text-gray-700 font-bold text-lg">
+                  {activeTab === "PENDIENTE" &&
+                    "¡Al día! No hay profesionales pendientes de validación."}
+                  {activeTab === "APROBADO" &&
+                    "Aún no hay profesionales auditados y aprobados."}
+                  {activeTab === "RECHAZADO" &&
+                    "No hay profesionales en el historial de rechazados."}
                 </p>
-              ) : profesionales.length === 0 ? (
-                <div className="p-12 text-center">
-                  <CheckCircle className="mx-auto text-success mb-3" size={40} />
-                  <p className="text-gray-700 font-bold text-lg">
-                    {activeTab === "PENDIENTE" &&
-                      "¡Al día! No hay profesionales pendientes de validación."}
-                    {activeTab === "APROBADO" &&
-                      "Aún no hay profesionales auditados y aprobados."}
-                    {activeTab === "RECHAZADO" &&
-                      "No hay profesionales en el historial de rechazados."}
-                  </p>
-                  <p className="text-gray-400 text-sm mt-1">
-                    {activeTab === "PENDIENTE" &&
-                      "Todas las solicitudes recibidas han sido auditadas."}
-                    {activeTab === "APROBADO" &&
-                      "Los perfiles aprobados aparecerán aquí."}
-                    {activeTab === "RECHAZADO" &&
-                      "El registro de legajos rechazados aparecerá aquí con sus motivos."}
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50 border-b border-gray-100 text-dark/70 text-xs uppercase tracking-wider">
-                        <th className="p-4 font-bold">Profesional</th>
-                        <th className="p-4 font-bold">CUIT / Fiscal</th>
-                        <th className="p-4 font-bold">Oficios</th>
-                        <th className="p-4 font-bold">Documentación Adjunta</th>
-                        <th className="p-4 font-bold text-right">
-                          {activeTab === "PENDIENTE"
-                            ? "Acciones"
-                            : activeTab === "APROBADO"
-                              ? "Estado"
-                              : "Motivo de Rechazo"}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {profesionales.map((prof) => (
-                        <tr
-                          key={prof.id}
-                          className={`transition-colors ${prof.es_profesional_auditado_nueva_matricula
-                              ? "bg-amber-50/40 hover:bg-amber-50/70"
-                              : "hover:bg-gray-50/50"
-                            }`}
-                        >
-                          <td className="p-4 align-top">
-                            {prof.es_profesional_auditado_nueva_matricula && (
-                              <div className="mb-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-amber-500/10 to-orange-500/15 border border-orange-300 text-orange-900 rounded-lg text-xs font-bold shadow-2xs">
-                                <ShieldCheck
-                                  size={14}
-                                  className="text-orange-600 shrink-0"
-                                />
-                                <span>
-                                  Profesional ya auditado (Nueva matrícula)
-                                </span>
-                              </div>
-                            )}
-                            <div className="font-bold text-dark text-base">
-                              {prof.usuario.nombre} {prof.usuario.apellido}
-                            </div>
-                            <div className="text-xs text-dark/60 font-medium">
-                              {prof.usuario.email}
-                            </div>
-                            {prof.usuario.telefono && (
-                              <div className="text-xs text-gray-400 mt-0.5">
-                                Tel: {prof.usuario.telefono}
-                              </div>
-                            )}
-                          </td>
-
-                          <td className="p-4 align-top text-sm">
-                            {prof.cuit ? (
-                              <span className="font-mono font-bold bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-xs">
-                                {prof.cuit}
+                <p className="text-gray-400 text-sm mt-1">
+                  {activeTab === "PENDIENTE" &&
+                    "Todas las solicitudes recibidas han sido auditadas."}
+                  {activeTab === "APROBADO" &&
+                    "Los perfiles aprobados aparecerán aquí."}
+                  {activeTab === "RECHAZADO" &&
+                    "El registro de legajos rechazados aparecerá aquí con sus motivos."}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100 text-dark/70 text-xs uppercase tracking-wider">
+                      <th className="p-4 font-bold">Profesional</th>
+                      <th className="p-4 font-bold">CUIT / Fiscal</th>
+                      <th className="p-4 font-bold">Oficios</th>
+                      <th className="p-4 font-bold">Documentación Adjunta</th>
+                      <th className="p-4 font-bold text-right">
+                        {activeTab === "PENDIENTE"
+                          ? "Acciones"
+                          : activeTab === "APROBADO"
+                            ? "Estado"
+                            : "Motivo de Rechazo"}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {profesionales.map((prof) => (
+                      <tr
+                        key={prof.id}
+                        className={`transition-colors ${
+                          prof.es_profesional_auditado_nueva_matricula
+                            ? "bg-amber-50/40 hover:bg-amber-50/70"
+                            : "hover:bg-gray-50/50"
+                        }`}
+                      >
+                        <td className="p-4 align-top">
+                          {prof.es_profesional_auditado_nueva_matricula && (
+                            <div className="mb-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-amber-500/10 to-orange-500/15 border border-orange-300 text-orange-900 rounded-lg text-xs font-bold shadow-2xs">
+                              <ShieldCheck
+                                size={14}
+                                className="text-orange-600 shrink-0"
+                              />
+                              <span>
+                                Profesional ya auditado (Nueva matrícula)
                               </span>
+                            </div>
+                          )}
+                          <div className="font-bold text-dark text-base">
+                            {prof.usuario.nombre} {prof.usuario.apellido}
+                          </div>
+                          <div className="text-xs text-dark/60 font-medium">
+                            {prof.usuario.email}
+                          </div>
+                          {prof.usuario.telefono && (
+                            <div className="text-xs text-gray-400 mt-0.5">
+                              Tel: {prof.usuario.telefono}
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="p-4 align-top text-sm">
+                          {prof.cuit ? (
+                            <span className="font-mono font-bold bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-xs">
+                              {prof.cuit}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">
+                              Sin CUIT
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="p-4 align-top">
+                          <div className="flex flex-wrap gap-1.5 max-w-xs mb-2">
+                            {prof.oficios && prof.oficios.length > 0 ? (
+                              prof.oficios.map((oficio) => (
+                                <span
+                                  key={oficio.id}
+                                  className="px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md text-xs font-semibold flex items-center gap-1"
+                                >
+                                  <Check
+                                    size={11}
+                                    className="text-emerald-600"
+                                  />
+                                  {oficio.nombre_oficio}
+                                </span>
+                              ))
                             ) : (
                               <span className="text-xs text-gray-400">
-                                Sin CUIT
+                                Sin oficios previos
                               </span>
                             )}
-                          </td>
+                          </div>
 
-                          <td className="p-4 align-top">
-                            <div className="flex flex-wrap gap-1.5 max-w-xs mb-2">
-                              {prof.oficios && prof.oficios.length > 0 ? (
-                                prof.oficios.map((oficio) => (
-                                  <span
-                                    key={oficio.id}
-                                    className="px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md text-xs font-semibold flex items-center gap-1"
-                                  >
-                                    <Check size={11} className="text-emerald-600" />
-                                    {oficio.nombre_oficio}
-                                  </span>
-                                ))
-                              ) : (
-                                <span className="text-xs text-gray-400">
-                                  Sin oficios previos
+                          {prof.es_profesional_auditado_nueva_matricula &&
+                            prof.oficios_pendientes &&
+                            prof.oficios_pendientes.length > 0 && (
+                              <div className="p-2 bg-orange-50 border border-orange-300 rounded-xl text-xs">
+                                <span className="font-bold text-orange-950 block text-[11px] uppercase tracking-wider mb-1">
+                                  Nueva matrícula a validar:
                                 </span>
-                              )}
-                            </div>
-
-                            {prof.es_profesional_auditado_nueva_matricula &&
-                              prof.oficios_pendientes &&
-                              prof.oficios_pendientes.length > 0 && (
-                                <div className="p-2 bg-orange-50 border border-orange-300 rounded-xl text-xs">
-                                  <span className="font-bold text-orange-950 block text-[11px] uppercase tracking-wider mb-1">
-                                    Nueva matrícula a validar:
-                                  </span>
-                                  <div className="flex flex-wrap gap-1">
-                                    {prof.oficios_pendientes.map((o) => (
-                                      <span
-                                        key={o.id}
-                                        className="px-2 py-0.5 bg-orange-600 text-white rounded text-xs font-bold"
-                                      >
-                                        ★ {o.nombre_oficio}
-                                      </span>
-                                    ))}
-                                  </div>
+                                <div className="flex flex-wrap gap-1">
+                                  {prof.oficios_pendientes.map((o) => (
+                                    <span
+                                      key={o.id}
+                                      className="px-2 py-0.5 bg-orange-600 text-white rounded text-xs font-bold"
+                                    >
+                                      ★ {o.nombre_oficio}
+                                    </span>
+                                  ))}
                                 </div>
-                              )}
-                          </td>
+                              </div>
+                            )}
+                        </td>
 
-                          <td className="p-4 align-top">
-                            <div className="grid grid-cols-2 gap-1.5 text-xs">
-                              {prof.dni_frente && (
-                                <button
-                                  onClick={() =>
-                                    abrirDocumento(
-                                      prof.dni_frente,
-                                      "DNI Frente",
-                                      `${prof.usuario.nombre} ${prof.usuario.apellido}`,
-                                    )
-                                  }
-                                  className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-blue-600 font-medium rounded border border-gray-200 flex items-center gap-1"
-                                >
-                                  <FileText size={12} /> DNI Frente
-                                </button>
-                              )}
-                              {prof.dni_dorso && (
-                                <button
-                                  onClick={() =>
-                                    abrirDocumento(
-                                      prof.dni_dorso,
-                                      "DNI Dorso",
-                                      `${prof.usuario.nombre} ${prof.usuario.apellido}`,
-                                    )
-                                  }
-                                  className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-blue-600 font-medium rounded border border-gray-200 flex items-center gap-1"
-                                >
-                                  <FileText size={12} /> DNI Dorso
-                                </button>
-                              )}
-                              {prof.selfie_biometrica && (
-                                <button
-                                  onClick={() =>
-                                    abrirDocumento(
-                                      prof.selfie_biometrica,
-                                      "Selfie Biométrica",
-                                      `${prof.usuario.nombre} ${prof.usuario.apellido}`,
-                                    )
-                                  }
-                                  className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-blue-600 font-medium rounded border border-gray-200 flex items-center gap-1"
-                                >
-                                  <User size={12} /> Selfie
-                                </button>
-                              )}
-                              {prof.constancia_afip && (
-                                <button
-                                  onClick={() =>
-                                    abrirDocumento(
-                                      prof.constancia_afip,
-                                      "Constancia AFIP",
-                                      `${prof.usuario.nombre} ${prof.usuario.apellido}`,
-                                    )
-                                  }
-                                  className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-emerald-700 font-medium rounded border border-gray-200 flex items-center gap-1"
-                                >
-                                  <FileText size={12} /> AFIP
-                                </button>
-                              )}
-                              {prof.antecedentes_penales && (
-                                <button
-                                  onClick={() =>
-                                    abrirDocumento(
-                                      prof.antecedentes_penales,
-                                      "Antecedentes Penales",
-                                      `${prof.usuario.nombre} ${prof.usuario.apellido}`,
-                                    )
-                                  }
-                                  className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-purple-700 font-medium rounded border border-gray-200 flex items-center gap-1"
-                                >
-                                  <FileText size={12} /> Antecedentes
-                                </button>
-                              )}
-                              {prof.certificado_no_deudor && (
-                                <button
-                                  onClick={() =>
-                                    abrirDocumento(
-                                      prof.certificado_no_deudor,
-                                      "No Deudor Alimentario",
-                                      `${prof.usuario.nombre} ${prof.usuario.apellido}`,
-                                    )
-                                  }
-                                  className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-purple-700 font-medium rounded border border-gray-200 flex items-center gap-1"
-                                >
-                                  <FileText size={12} /> No Deudor
-                                </button>
-                              )}
-                              {prof.matricula_documento && (
-                                <button
-                                  onClick={() =>
-                                    abrirDocumento(
-                                      prof.matricula_documento,
-                                      "Matrícula Habilitante (PDF)",
-                                      `${prof.usuario.nombre} ${prof.usuario.apellido}`,
-                                    )
-                                  }
-                                  className={`col-span-2 text-left px-2.5 py-1.5 font-bold rounded-lg border flex items-center gap-1.5 transition ${prof.es_profesional_auditado_nueva_matricula
-                                      ? "bg-orange-100 hover:bg-orange-200 text-orange-950 border-orange-400 shadow-2xs"
-                                      : "bg-orange-50 hover:bg-orange-100 text-orange-800 border-orange-200"
-                                    }`}
-                                >
-                                  <FileText
-                                    size={13}
-                                    className="text-orange-700 shrink-0"
-                                  />
-                                  <span>
-                                    {prof.es_profesional_auditado_nueva_matricula
-                                      ? "Ver Matrícula Nueva Adjunta (PDF)"
-                                      : "Matrícula Habilitante (PDF)"}
-                                  </span>
-                                </button>
-                              )}
-                            </div>
-                          </td>
-
-                          <td className="p-4 align-top text-right">
-                            {activeTab === "PENDIENTE" && (
-                              <div className="space-x-2 whitespace-nowrap inline-flex">
-                                <button
-                                  onClick={() => abrirModalAprobar(prof)}
-                                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs hover:shadow-xs active:scale-95 ${prof.es_profesional_auditado_nueva_matricula
-                                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                                      : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80"
-                                    }`}
-                                  title={
-                                    prof.es_profesional_auditado_nueva_matricula
-                                      ? "Validar y habilitar nueva matrícula"
-                                      : "Aprobar legajo y activar profesional"
-                                  }
-                                >
-                                  <CheckCircle size={15} />
+                        <td className="p-4 align-top">
+                          <div className="grid grid-cols-2 gap-1.5 text-xs">
+                            {prof.dni_frente && (
+                              <button
+                                onClick={() =>
+                                  abrirDocumento(
+                                    prof.dni_frente,
+                                    "DNI Frente",
+                                    `${prof.usuario.nombre} ${prof.usuario.apellido}`,
+                                  )
+                                }
+                                className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-blue-600 font-medium rounded border border-gray-200 flex items-center gap-1"
+                              >
+                                <FileText size={12} /> DNI Frente
+                              </button>
+                            )}
+                            {prof.dni_dorso && (
+                              <button
+                                onClick={() =>
+                                  abrirDocumento(
+                                    prof.dni_dorso,
+                                    "DNI Dorso",
+                                    `${prof.usuario.nombre} ${prof.usuario.apellido}`,
+                                  )
+                                }
+                                className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-blue-600 font-medium rounded border border-gray-200 flex items-center gap-1"
+                              >
+                                <FileText size={12} /> DNI Dorso
+                              </button>
+                            )}
+                            {prof.selfie_biometrica && (
+                              <button
+                                onClick={() =>
+                                  abrirDocumento(
+                                    prof.selfie_biometrica,
+                                    "Selfie Biométrica",
+                                    `${prof.usuario.nombre} ${prof.usuario.apellido}`,
+                                  )
+                                }
+                                className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-blue-600 font-medium rounded border border-gray-200 flex items-center gap-1"
+                              >
+                                <User size={12} /> Selfie
+                              </button>
+                            )}
+                            {prof.constancia_afip && (
+                              <button
+                                onClick={() =>
+                                  abrirDocumento(
+                                    prof.constancia_afip,
+                                    "Constancia AFIP",
+                                    `${prof.usuario.nombre} ${prof.usuario.apellido}`,
+                                  )
+                                }
+                                className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-emerald-700 font-medium rounded border border-gray-200 flex items-center gap-1"
+                              >
+                                <FileText size={12} /> AFIP
+                              </button>
+                            )}
+                            {prof.antecedentes_penales && (
+                              <button
+                                onClick={() =>
+                                  abrirDocumento(
+                                    prof.antecedentes_penales,
+                                    "Antecedentes Penales",
+                                    `${prof.usuario.nombre} ${prof.usuario.apellido}`,
+                                  )
+                                }
+                                className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-purple-700 font-medium rounded border border-gray-200 flex items-center gap-1"
+                              >
+                                <FileText size={12} /> Antecedentes
+                              </button>
+                            )}
+                            {prof.certificado_no_deudor && (
+                              <button
+                                onClick={() =>
+                                  abrirDocumento(
+                                    prof.certificado_no_deudor,
+                                    "No Deudor Alimentario",
+                                    `${prof.usuario.nombre} ${prof.usuario.apellido}`,
+                                  )
+                                }
+                                className="text-left px-2 py-1 bg-gray-50 hover:bg-gray-100 text-purple-700 font-medium rounded border border-gray-200 flex items-center gap-1"
+                              >
+                                <FileText size={12} /> No Deudor
+                              </button>
+                            )}
+                            {prof.matricula_documento && (
+                              <button
+                                onClick={() =>
+                                  abrirDocumento(
+                                    prof.matricula_documento,
+                                    "Matrícula Habilitante (PDF)",
+                                    `${prof.usuario.nombre} ${prof.usuario.apellido}`,
+                                  )
+                                }
+                                className={`col-span-2 text-left px-2.5 py-1.5 font-bold rounded-lg border flex items-center gap-1.5 transition ${
+                                  prof.es_profesional_auditado_nueva_matricula
+                                    ? "bg-orange-100 hover:bg-orange-200 text-orange-950 border-orange-400 shadow-2xs"
+                                    : "bg-orange-50 hover:bg-orange-100 text-orange-800 border-orange-200"
+                                }`}
+                              >
+                                <FileText
+                                  size={13}
+                                  className="text-orange-700 shrink-0"
+                                />
+                                <span>
                                   {prof.es_profesional_auditado_nueva_matricula
-                                    ? "Validar Matrícula"
-                                    : "Aprobar"}
-                                </button>
-                                <button
-                                  onClick={() => abrirModalRechazo(prof)}
-                                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-800 border border-rose-200/80 rounded-xl text-xs font-bold transition-all shadow-2xs hover:shadow-xs active:scale-95"
-                                  title="Rechazar documentación y enviar motivo por email"
-                                >
-                                  <XCircle size={15} /> Rechazar
-                                </button>
-                              </div>
-                            )}
-
-                            {activeTab === "APROBADO" && (
-                              <div className="inline-flex flex-col items-end">
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold">
-                                  <CheckCircle size={14} /> Validado
+                                    ? "Ver Matrícula Nueva Adjunta (PDF)"
+                                    : "Matrícula Habilitante (PDF)"}
                                 </span>
-                                {prof.fecha_validacion && (
-                                  <span className="text-[11px] text-gray-400 mt-1">
-                                    {new Date(
-                                      prof.fecha_validacion,
-                                    ).toLocaleDateString()}
-                                  </span>
-                                )}
-                              </div>
+                              </button>
                             )}
+                          </div>
+                        </td>
 
-                            {activeTab === "RECHAZADO" && (
-                              <div className="text-left max-w-xs ml-auto">
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold mb-1.5">
-                                  <XCircle size={14} /> Rechazado
+                        <td className="p-4 align-top text-right">
+                          {activeTab === "PENDIENTE" && (
+                            <div className="space-x-2 whitespace-nowrap inline-flex">
+                              <button
+                                onClick={() => abrirModalAprobar(prof)}
+                                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs hover:shadow-xs active:scale-95 ${
+                                  prof.es_profesional_auditado_nueva_matricula
+                                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                                    : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80"
+                                }`}
+                                title={
+                                  prof.es_profesional_auditado_nueva_matricula
+                                    ? "Validar y habilitar nueva matrícula"
+                                    : "Aprobar legajo y activar profesional"
+                                }
+                              >
+                                <CheckCircle size={15} />
+                                {prof.es_profesional_auditado_nueva_matricula
+                                  ? "Validar Matrícula"
+                                  : "Aprobar"}
+                              </button>
+                              <button
+                                onClick={() => abrirModalRechazo(prof)}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-800 border border-rose-200/80 rounded-xl text-xs font-bold transition-all shadow-2xs hover:shadow-xs active:scale-95"
+                                title="Rechazar documentación y enviar motivo por email"
+                              >
+                                <XCircle size={15} /> Rechazar
+                              </button>
+                            </div>
+                          )}
+
+                          {activeTab === "APROBADO" && (
+                            <div className="inline-flex flex-col items-end">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold">
+                                <CheckCircle size={14} /> Validado
+                              </span>
+                              {prof.fecha_validacion && (
+                                <span className="text-[11px] text-gray-400 mt-1">
+                                  {new Date(
+                                    prof.fecha_validacion,
+                                  ).toLocaleDateString()}
                                 </span>
-                                <div className="p-2.5 bg-rose-50/80 border border-rose-200 rounded-xl text-xs text-rose-950 font-medium">
-                                  <strong className="block text-[11px] uppercase tracking-wider text-rose-700 mb-0.5">
-                                    Motivo del rechazo:
-                                  </strong>
-                                  {prof.motivo_rechazo ||
-                                    "Documentación no legible o incompleta"}
-                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {activeTab === "RECHAZADO" && (
+                            <div className="text-left max-w-xs ml-auto">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold mb-1.5">
+                                <XCircle size={14} /> Rechazado
+                              </span>
+                              <div className="p-2.5 bg-rose-50/80 border border-rose-200 rounded-xl text-xs text-rose-950 font-medium">
+                                <strong className="block text-[11px] uppercase tracking-wider text-rose-700 mb-0.5">
+                                  Motivo del rechazo:
+                                </strong>
+                                {prof.motivo_rechazo ||
+                                  "Documentación no legible o incompleta"}
                               </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
         {activeTab === "REPORTES" && (
           <div className="space-y-6">
@@ -1205,10 +1305,11 @@ export const AdminBackoffice = () => {
                   <button
                     key={f.id}
                     onClick={() => setFiltroEstadoReporte(f.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${filtroEstadoReporte === f.id
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                      filtroEstadoReporte === f.id
                         ? "bg-rose-500 text-white shadow-sm shadow-rose-200"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}
+                    }`}
                   >
                     <span>{f.label}</span>
                     {Boolean(f.badge && f.badge > 0) && (
@@ -1268,14 +1369,15 @@ export const AdminBackoffice = () => {
                         <div className="flex flex-wrap items-center gap-2">
                           {/* Badge Estado */}
                           <span
-                            className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${rep.estado === "PENDIENTE"
+                            className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${
+                              rep.estado === "PENDIENTE"
                                 ? "bg-rose-50 text-[#EF4444] border border-rose-200"
                                 : rep.estado === "EN_REVISION"
                                   ? "bg-amber-50 text-amber-700 border border-amber-200"
                                   : rep.estado === "RESUELTO_CON_SANCION"
                                     ? "bg-purple-50 text-purple-700 border border-purple-200"
                                     : "bg-gray-100 text-gray-700 border border-gray-200"
-                              }`}
+                            }`}
                           >
                             {rep.estado === "PENDIENTE" && (
                               <AlertTriangle size={13} />
@@ -1635,6 +1737,17 @@ export const AdminBackoffice = () => {
           </div>
         )}
 
+        {activeTab === "DISPUTAS" && (
+          <AdminDisputasTab
+            disputas={disputas}
+            cargando={cargandoDisputas}
+            filtroEstado={filtroEstadoDisputa}
+            onChangeFiltro={setFiltroEstadoDisputa}
+            onRecargar={cargarDisputas}
+            onNotify={(tipo, texto) => setToastMessage({ tipo, texto })}
+          />
+        )}
+
         {rejectModal && (
           <div
             className="fixed inset-0 bg-dark/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200"
@@ -1698,16 +1811,18 @@ export const AdminBackoffice = () => {
                             setSelectedMotivoIndex(idx);
                             setRejectError(null);
                           }}
-                          className={`w-full text-left p-3 rounded-xl border text-xs sm:text-sm transition-all flex items-center gap-3 ${isSelected
+                          className={`w-full text-left p-3 rounded-xl border text-xs sm:text-sm transition-all flex items-center gap-3 ${
+                            isSelected
                               ? "border-rose-500 bg-rose-50/70 text-rose-950 font-semibold shadow-xs ring-1 ring-rose-200"
                               : "border-gray-200 bg-white hover:bg-gray-50/80 text-gray-700"
-                            }`}
+                          }`}
                         >
                           <div
-                            className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${isSelected
+                            className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                              isSelected
                                 ? "border-rose-600 bg-rose-600"
                                 : "border-gray-300 bg-white"
-                              }`}
+                            }`}
                           >
                             {isSelected && (
                               <div className="w-1.5 h-1.5 rounded-full bg-white" />
@@ -1724,16 +1839,18 @@ export const AdminBackoffice = () => {
                         setSelectedMotivoIndex("otro");
                         setRejectError(null);
                       }}
-                      className={`w-full text-left p-3 rounded-xl border text-xs sm:text-sm transition-all flex items-center gap-3 ${selectedMotivoIndex === "otro"
+                      className={`w-full text-left p-3 rounded-xl border text-xs sm:text-sm transition-all flex items-center gap-3 ${
+                        selectedMotivoIndex === "otro"
                           ? "border-rose-500 bg-rose-50/70 text-rose-950 font-semibold shadow-xs ring-1 ring-rose-200"
                           : "border-gray-200 bg-white hover:bg-gray-50/80 text-gray-700"
-                        }`}
+                      }`}
                     >
                       <div
-                        className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${selectedMotivoIndex === "otro"
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                          selectedMotivoIndex === "otro"
                             ? "border-rose-600 bg-rose-600"
                             : "border-gray-300 bg-white"
-                          }`}
+                        }`}
                       >
                         {selectedMotivoIndex === "otro" && (
                           <div className="w-1.5 h-1.5 rounded-full bg-white" />
@@ -1781,7 +1898,7 @@ export const AdminBackoffice = () => {
                     <p className="text-blue-900 font-semibold text-xs mt-1 leading-relaxed">
                       {selectedMotivoIndex === "otro"
                         ? customMotivo.trim() ||
-                        "(Escribe el motivo en el campo superior...)"
+                          "(Escribe el motivo en el campo superior...)"
                         : MOTIVOS_PREDETERMINADOS[selectedMotivoIndex]}
                     </p>
                   </div>
@@ -1927,10 +2044,11 @@ export const AdminBackoffice = () => {
 
         {toastMessage && (
           <div
-            className={`fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-xl border flex items-center gap-3 max-w-md animate-in slide-in-from-bottom duration-300 ${toastMessage.tipo === "success"
+            className={`fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-xl border flex items-center gap-3 max-w-md animate-in slide-in-from-bottom duration-300 ${
+              toastMessage.tipo === "success"
                 ? "bg-white border-emerald-200 text-emerald-950 shadow-emerald-100"
                 : "bg-white border-rose-200 text-rose-950 shadow-rose-100"
-              }`}
+            }`}
           >
             {toastMessage.tipo === "success" ? (
               <CheckCircle size={20} className="text-emerald-600 shrink-0" />
@@ -2055,7 +2173,8 @@ export const AdminBackoffice = () => {
                       </span>
                     </div>
                     <p className="text-xs text-dark/60 mt-0.5">
-                      Transcriptor oficial de mensajes para peritaje disciplinario
+                      Transcriptor oficial de mensajes para peritaje
+                      disciplinario
                     </p>
                   </div>
                 </div>
@@ -2129,7 +2248,8 @@ export const AdminBackoffice = () => {
                       size={32}
                       className="mx-auto mb-2 opacity-50"
                     />
-                    No hay mensajes de texto registrados en la sala de chat de esta solicitud.
+                    No hay mensajes de texto registrados en la sala de chat de
+                    esta solicitud.
                   </div>
                 ) : (
                   modalAuditChat.mensajes.map((m) => {
@@ -2138,8 +2258,9 @@ export const AdminBackoffice = () => {
                     return (
                       <div
                         key={m.id}
-                        className={`flex flex-col ${isDenunciado ? "items-start" : "items-end"
-                          }`}
+                        className={`flex flex-col ${
+                          isDenunciado ? "items-start" : "items-end"
+                        }`}
                       >
                         <div className="flex items-center gap-1.5 mb-1 px-1 text-[11px] text-gray-500">
                           <span className="font-bold text-dark">
@@ -2151,10 +2272,11 @@ export const AdminBackoffice = () => {
                           <span>{formatearFecha(m.enviado_en)}</span>
                         </div>
                         <div
-                          className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed shadow-2xs ${isDenunciado
+                          className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed shadow-2xs ${
+                            isDenunciado
                               ? "bg-rose-50 text-rose-950 border border-rose-200 rounded-tl-sm"
                               : "bg-white text-gray-900 border border-gray-200 rounded-tr-sm"
-                            }`}
+                          }`}
                         >
                           <p className="whitespace-pre-wrap">{m.contenido}</p>
                           {m.adjunto_url && (
@@ -2255,8 +2377,7 @@ export const AdminBackoffice = () => {
                       },
                       {
                         id: "SUSPENSION_TEMPORAL",
-                        titulo:
-                          "⏳ Suspensión temporal de cuenta por 7 días",
+                        titulo: "⏳ Suspensión temporal de cuenta por 7 días",
                         desc: "Revoca de inmediato todas las sesiones activas y bloquea el acceso a la plataforma durante 7 días.",
                         border: "hover:border-orange-400",
                         active:
@@ -2282,19 +2403,23 @@ export const AdminBackoffice = () => {
                     ].map((op) => (
                       <div
                         key={op.id}
-                        onClick={() => setSancionSeleccionada(op.id as SancionTipo)}
-                        className={`p-3.5 rounded-2xl border text-xs cursor-pointer transition ${sancionSeleccionada === op.id
+                        onClick={() =>
+                          setSancionSeleccionada(op.id as SancionTipo)
+                        }
+                        className={`p-3.5 rounded-2xl border text-xs cursor-pointer transition ${
+                          sancionSeleccionada === op.id
                             ? op.active
                             : `border-gray-200 bg-white text-gray-700 ${op.border}`
-                          }`}
+                        }`}
                       >
                         <div className="flex items-center justify-between font-bold mb-1">
                           <span>{op.titulo}</span>
                           <div
-                            className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${sancionSeleccionada === op.id
+                            className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                              sancionSeleccionada === op.id
                                 ? "border-[#EF4444] bg-[#EF4444]"
                                 : "border-gray-300"
-                              }`}
+                            }`}
                           >
                             {sancionSeleccionada === op.id && (
                               <div className="w-1.5 h-1.5 rounded-full bg-white" />
@@ -2328,7 +2453,9 @@ export const AdminBackoffice = () => {
                     className="shrink-0 mt-0.5 text-amber-600"
                   />
                   <span>
-                    El dictamen quedará permanentemente asentado en la bitácora administrativa de auditoría y se notificará en tiempo real al usuario sancionado.
+                    El dictamen quedará permanentemente asentado en la bitácora
+                    administrativa de auditoría y se notificará en tiempo real
+                    al usuario sancionado.
                   </span>
                 </div>
               </div>
