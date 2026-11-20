@@ -164,7 +164,7 @@ export const AdminDisputasTab = ({
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:3000/api/disputas/admin/${disputa.id}/chat`,
+        `https://expertoya-backend.onrender.com/api/disputas/admin/${disputa.id}/chat`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -233,7 +233,7 @@ export const AdminDisputasTab = ({
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:3000/api/disputas/admin/${modalResolver.id}/resolver`,
+        `https://expertoya-backend.onrender.com/api/disputas/admin/${modalResolver.id}/resolver`,
         {
           method: "POST",
           headers: {

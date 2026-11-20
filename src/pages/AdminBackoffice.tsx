@@ -346,7 +346,7 @@ export const AdminBackoffice = () => {
       return null;
     if (path.startsWith("http://") || path.startsWith("https://")) return path;
     const clean = path.replace(/\\/g, "/");
-    return `http://localhost:3000/${clean.startsWith("/") ? clean.slice(1) : clean}`;
+    return `https://expertoya-backend.onrender.com/${clean.startsWith("/") ? clean.slice(1) : clean}`;
   };
 
   const abrirDocumento = (
@@ -385,7 +385,7 @@ export const AdminBackoffice = () => {
       }
 
       const respuesta = await fetch(
-        `http://localhost:3000/api/admin/professionals?status=${tab}`,
+        `https://expertoya-backend.onrender.com/api/admin/professionals?status=${tab}`,
         {
           headers: {
             Authorization: "Bearer " + token,
@@ -421,9 +421,12 @@ export const AdminBackoffice = () => {
 
       const q =
         filtroEstadoReporte !== "TODOS" ? `?estado=${filtroEstadoReporte}` : "";
-      const res = await fetch(`http://localhost:3000/api/admin/reportes${q}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `https://expertoya-backend.onrender.com/api/admin/reportes${q}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
 
       if (res.ok) {
         const data = await res.json();
@@ -447,9 +450,12 @@ export const AdminBackoffice = () => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const res = await fetch(`http://localhost:3000/api/admin/bloqueos`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `https://expertoya-backend.onrender.com/api/admin/bloqueos`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
 
       if (res.ok) {
         const data = await res.json();
@@ -473,7 +479,7 @@ export const AdminBackoffice = () => {
       const q =
         filtroEstadoDisputa !== "TODOS" ? `?estado=${filtroEstadoDisputa}` : "";
       const res = await fetch(
-        `http://localhost:3000/api/disputas/admin/todas${q}`,
+        `https://expertoya-backend.onrender.com/api/disputas/admin/todas${q}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -500,7 +506,7 @@ export const AdminBackoffice = () => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    const socket: Socket = io("http://localhost:3000", {
+    const socket: Socket = io("https://expertoya-backend.onrender.com", {
       auth: { token },
       transports: ["websocket", "polling"],
     });
@@ -569,7 +575,7 @@ export const AdminBackoffice = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:3000/api/admin/reportes/${rep.id}`,
+        `https://expertoya-backend.onrender.com/api/admin/reportes/${rep.id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -625,7 +631,7 @@ export const AdminBackoffice = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:3000/api/admin/reportes/${modalResolver.id}/resolver`,
+        `https://expertoya-backend.onrender.com/api/admin/reportes/${modalResolver.id}/resolver`,
         {
           method: "PATCH",
           headers: {
@@ -686,7 +692,7 @@ export const AdminBackoffice = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:3000/api/admin/professionals/${approveModal.id}/approve`,
+        `https://expertoya-backend.onrender.com/api/admin/professionals/${approveModal.id}/approve`,
         {
           method: "PATCH",
           headers: { Authorization: `Bearer ${token}` },
@@ -757,7 +763,7 @@ export const AdminBackoffice = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:3000/api/admin/professionals/${rejectModal.id}/reject`,
+        `https://expertoya-backend.onrender.com/api/admin/professionals/${rejectModal.id}/reject`,
         {
           method: "PATCH",
           headers: {
@@ -959,7 +965,6 @@ export const AdminBackoffice = () => {
               </span>
             )}
           </button>
-
         </div>
 
         {(activeTab === "PENDIENTE" ||

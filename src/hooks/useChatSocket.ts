@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { io, Socket } from 'socket.io-client';
-import type { MensajeChatModel, VideoCallInvitation } from '../types/chat';
+import { useEffect, useState, useRef, useCallback } from "react";
+import { io, Socket } from "socket.io-client";
+import type { MensajeChatModel, VideoCallInvitation } from "../types/chat";
 
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = "https://expertoya-backend.onrender.com";
 
 interface UseChatSocketParams {
   solicitudId: string;
@@ -13,7 +13,11 @@ interface UseChatSocketParams {
 const isUUID = (str: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
-export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParams) => {
+export const useChatSocket = ({
+  solicitudId,
+  userId,
+  token,
+}: UseChatSocketParams) => {
   const [mensajes, setMensajes] = useState<MensajeChatModel[]>([]);
   const [cargando, setCargando] = useState<boolean>(() => isUUID(solicitudId));
   const [bloqueado, setBloqueado] = useState<boolean>(false);
@@ -23,17 +27,23 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
     es_bloqueador?: boolean;
     fecha_bloqueo?: string;
   } | null>(null);
-  const [estadoSolicitud, setEstadoSolicitud] = useState<string>('');
+  const [estadoSolicitud, setEstadoSolicitud] = useState<string>("");
   const [subiendoFoto, setSubiendoFoto] = useState<boolean>(false);
-  const [otroUsuarioEscribiendo, setOtroUsuarioEscribiendo] = useState<boolean>(false);
+  const [otroUsuarioEscribiendo, setOtroUsuarioEscribiendo] =
+    useState<boolean>(false);
 
-  const [llamadaEntrante, setLlamadaEntrante] = useState<VideoCallInvitation | null>(null);
+  const [llamadaEntrante, setLlamadaEntrante] =
+    useState<VideoCallInvitation | null>(null);
   const [llamadaSaliente, setLlamadaSaliente] = useState<boolean>(false);
   const [salaUrlActiva, setSalaUrlActiva] = useState<string | null>(null);
 
   const socketRef = useRef<Socket | null>(null);
-  const typingSafetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const typingDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingSafetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const typingDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const esSolicitudReal = isUUID(solicitudId);
 
@@ -48,7 +58,7 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
 
     fetch(`${API_BASE_URL}/api/chat/${solicitudId}/mensajes`, {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     })
@@ -61,21 +71,23 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
       .then((data) => {
         if (!ignore) {
           setBloqueado(Boolean(data.bloqueado));
-          setEstadoSolicitud(data.estado_solicitud || '');
+          setEstadoSolicitud(data.estado_solicitud || "");
           if (data.bloqueo_info) {
             setBloqueoInfo(data.bloqueo_info);
           }
 
-          const mapeados: MensajeChatModel[] = (data.mensajes || []).map((m: MensajeChatModel) => ({
-            id: m.id,
-            solicitud_id: m.solicitud_id,
-            remitente_id: m.remitente_id,
-            contenido: m.contenido,
-            adjunto_url: m.adjunto_url,
-            enviado_en: m.enviado_en,
-            leido: m.leido,
-            status: m.leido ? 'LEIDO' : 'ENTREGADO',
-          }));
+          const mapeados: MensajeChatModel[] = (data.mensajes || []).map(
+            (m: MensajeChatModel) => ({
+              id: m.id,
+              solicitud_id: m.solicitud_id,
+              remitente_id: m.remitente_id,
+              contenido: m.contenido,
+              adjunto_url: m.adjunto_url,
+              enviado_en: m.enviado_en,
+              leido: m.leido,
+              status: m.leido ? "LEIDO" : "ENTREGADO",
+            }),
+          );
 
           setMensajes(mapeados);
           setCargando(false);
@@ -83,7 +95,7 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
       })
       .catch((error) => {
         if (!ignore) {
-          console.error('Error al cargar historial del chat:', error);
+          console.error("Error al cargar historial del chat:", error);
           setCargando(false);
         }
       });
@@ -100,204 +112,256 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
 
     const socket = io(API_BASE_URL, {
       auth: { token },
-      transports: ['polling', 'websocket'],
+      transports: ["polling", "websocket"],
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
     });
 
     socketRef.current = socket;
 
-    socket.on('connect', () => {
-      console.log('🟢 [Web] Socket conectado al chat:', socket.id);
-      socket.emit('join_solicitud', { solicitud_id: solicitudId });
+    socket.on("connect", () => {
+      console.log("🟢 [Web] Socket conectado al chat:", socket.id);
+      socket.emit("join_solicitud", { solicitud_id: solicitudId });
     });
 
-    socket.on('chat_unido', (data: { solicitud_id: string; bloqueado: boolean; estado_solicitud: string; bloqueo?: { id?: string; motivo?: string; es_bloqueador?: boolean; bloqueador_id?: string } }) => {
-      if (data.bloqueado) {
-        setBloqueado(true);
-      }
-      if (data.bloqueo) {
-        setBloqueoInfo(data.bloqueo);
-      }
-      setEstadoSolicitud(data.estado_solicitud || '');
-    });
+    socket.on(
+      "chat_unido",
+      (data: {
+        solicitud_id: string;
+        bloqueado: boolean;
+        estado_solicitud: string;
+        bloqueo?: {
+          id?: string;
+          motivo?: string;
+          es_bloqueador?: boolean;
+          bloqueador_id?: string;
+        };
+      }) => {
+        if (data.bloqueado) {
+          setBloqueado(true);
+        }
+        if (data.bloqueo) {
+          setBloqueoInfo(data.bloqueo);
+        }
+        setEstadoSolicitud(data.estado_solicitud || "");
+      },
+    );
 
-    socket.on('nuevo_mensaje', (nuevoMsg: MensajeChatModel & { temp_id?: string }) => {
-      setMensajes((prev) => {
-        if (nuevoMsg.remitente_id === userId) {
-          const matchIndex = prev.findIndex(
-            (m) =>
-              m.id === nuevoMsg.temp_id ||
-              m.id === nuevoMsg.id ||
-              (m.status === 'ENVIANDO' && m.contenido === nuevoMsg.contenido)
-          );
+    socket.on(
+      "nuevo_mensaje",
+      (nuevoMsg: MensajeChatModel & { temp_id?: string }) => {
+        setMensajes((prev) => {
+          if (nuevoMsg.remitente_id === userId) {
+            const matchIndex = prev.findIndex(
+              (m) =>
+                m.id === nuevoMsg.temp_id ||
+                m.id === nuevoMsg.id ||
+                (m.status === "ENVIANDO" && m.contenido === nuevoMsg.contenido),
+            );
 
-          if (matchIndex !== -1) {
-            const updated = [...prev];
-            updated[matchIndex] = {
-              id: nuevoMsg.id,
-              solicitud_id: nuevoMsg.solicitud_id,
-              remitente_id: nuevoMsg.remitente_id,
-              contenido: nuevoMsg.contenido,
-              adjunto_url: nuevoMsg.adjunto_url,
-              enviado_en: nuevoMsg.enviado_en,
-              leido: nuevoMsg.leido,
-              status: nuevoMsg.leido ? 'LEIDO' : 'ENVIADO',
-            };
-            return updated;
+            if (matchIndex !== -1) {
+              const updated = [...prev];
+              updated[matchIndex] = {
+                id: nuevoMsg.id,
+                solicitud_id: nuevoMsg.solicitud_id,
+                remitente_id: nuevoMsg.remitente_id,
+                contenido: nuevoMsg.contenido,
+                adjunto_url: nuevoMsg.adjunto_url,
+                enviado_en: nuevoMsg.enviado_en,
+                leido: nuevoMsg.leido,
+                status: nuevoMsg.leido ? "LEIDO" : "ENVIADO",
+              };
+              return updated;
+            }
+
+            if (prev.some((m) => m.id === nuevoMsg.id)) return prev;
+
+            return [
+              ...prev,
+              {
+                id: nuevoMsg.id,
+                solicitud_id: nuevoMsg.solicitud_id,
+                remitente_id: nuevoMsg.remitente_id,
+                contenido: nuevoMsg.contenido,
+                adjunto_url: nuevoMsg.adjunto_url,
+                enviado_en: nuevoMsg.enviado_en,
+                leido: nuevoMsg.leido,
+                status: "ENVIADO",
+              },
+            ];
           }
 
-          if (prev.some((m) => m.id === nuevoMsg.id)) return prev;
+          if (prev.some((m) => m.id === nuevoMsg.id)) {
+            return prev;
+          }
+          setOtroUsuarioEscribiendo(false);
+          if (typingSafetyTimeoutRef.current)
+            clearTimeout(typingSafetyTimeoutRef.current);
 
-          return [
-            ...prev,
-            {
-              id: nuevoMsg.id,
-              solicitud_id: nuevoMsg.solicitud_id,
-              remitente_id: nuevoMsg.remitente_id,
-              contenido: nuevoMsg.contenido,
-              adjunto_url: nuevoMsg.adjunto_url,
-              enviado_en: nuevoMsg.enviado_en,
-              leido: nuevoMsg.leido,
-              status: 'ENVIADO',
-            },
-          ];
-        }
+          socket.emit("confirmar_entrega", {
+            mensaje_id: nuevoMsg.id,
+            solicitud_id: solicitudId,
+          });
 
-        if (prev.some((m) => m.id === nuevoMsg.id)) {
-          return prev;
-        }
-        setOtroUsuarioEscribiendo(false);
-        if (typingSafetyTimeoutRef.current) clearTimeout(typingSafetyTimeoutRef.current);
+          socket.emit("marcar_leido", {
+            solicitud_id: solicitudId,
+          });
 
-        socket.emit('confirmar_entrega', {
-          mensaje_id: nuevoMsg.id,
-          solicitud_id: solicitudId,
+          const recibido: MensajeChatModel = {
+            id: nuevoMsg.id,
+            solicitud_id: nuevoMsg.solicitud_id,
+            remitente_id: nuevoMsg.remitente_id,
+            contenido: nuevoMsg.contenido,
+            adjunto_url: nuevoMsg.adjunto_url,
+            enviado_en: nuevoMsg.enviado_en,
+            leido: true,
+            status: "ENTREGADO",
+          };
+
+          return [...prev, recibido];
         });
+      },
+    );
 
-        socket.emit('marcar_leido', {
-          solicitud_id: solicitudId,
-        });
-
-        const recibido: MensajeChatModel = {
-          id: nuevoMsg.id,
-          solicitud_id: nuevoMsg.solicitud_id,
-          remitente_id: nuevoMsg.remitente_id,
-          contenido: nuevoMsg.contenido,
-          adjunto_url: nuevoMsg.adjunto_url,
-          enviado_en: nuevoMsg.enviado_en,
-          leido: true,
-          status: 'ENTREGADO',
-        };
-
-        return [...prev, recibido];
-      });
-    });
-
-    socket.on('mensaje_entregado', ({ mensaje_id }: { mensaje_id: string }) => {
+    socket.on("mensaje_entregado", ({ mensaje_id }: { mensaje_id: string }) => {
       setMensajes((prev) =>
         prev.map((m) =>
-          m.id === mensaje_id && m.status !== 'LEIDO'
-            ? { ...m, status: 'ENTREGADO' }
-            : m
-        )
+          m.id === mensaje_id && m.status !== "LEIDO"
+            ? { ...m, status: "ENTREGADO" }
+            : m,
+        ),
       );
     });
 
-    socket.on('mensajes_leidos', ({ leido_por }: { solicitud_id: string; leido_por: string }) => {
-      if (leido_por !== userId) {
+    socket.on(
+      "mensajes_leidos",
+      ({ leido_por }: { solicitud_id: string; leido_por: string }) => {
+        if (leido_por !== userId) {
+          setMensajes((prev) =>
+            prev.map((m) =>
+              m.remitente_id === userId
+                ? { ...m, leido: true, status: "LEIDO" }
+                : m,
+            ),
+          );
+        }
+      },
+    );
+
+    socket.on(
+      "usuario_escribiendo",
+      (data: { solicitud_id: string; usuario_id: string }) => {
+        if (data.solicitud_id === solicitudId && data.usuario_id !== userId) {
+          setOtroUsuarioEscribiendo(true);
+          if (typingSafetyTimeoutRef.current)
+            clearTimeout(typingSafetyTimeoutRef.current);
+          typingSafetyTimeoutRef.current = setTimeout(() => {
+            setOtroUsuarioEscribiendo(false);
+          }, 4000);
+        }
+      },
+    );
+
+    socket.on(
+      "usuario_detuvo_escribiendo",
+      (data: { solicitud_id: string; usuario_id: string }) => {
+        if (data.solicitud_id === solicitudId && data.usuario_id !== userId) {
+          setOtroUsuarioEscribiendo(false);
+          if (typingSafetyTimeoutRef.current)
+            clearTimeout(typingSafetyTimeoutRef.current);
+        }
+      },
+    );
+
+    socket.on(
+      "chat_bloqueado",
+      (data: {
+        solicitud_id: string;
+        motivo: string;
+        bloqueador_id?: string;
+      }) => {
+        setBloqueado(true);
+        setEstadoSolicitud("BLOQUEADO");
+        setBloqueoInfo({
+          motivo: data.motivo,
+          es_bloqueador: data.bloqueador_id === userId,
+        });
+        setLlamadaEntrante(null);
+        setLlamadaSaliente(false);
+        setSalaUrlActiva(null);
+      },
+    );
+
+    socket.on(
+      "propuesta_actualizada",
+      (data: {
+        mensaje_id: string;
+        contenido: string;
+        nuevo_estado: string;
+      }) => {
         setMensajes((prev) =>
           prev.map((m) =>
-            m.remitente_id === userId ? { ...m, leido: true, status: 'LEIDO' } : m
-          )
+            m.id === data.mensaje_id ? { ...m, contenido: data.contenido } : m,
+          ),
         );
-      }
-    });
+      },
+    );
 
-    socket.on('usuario_escribiendo', (data: { solicitud_id: string; usuario_id: string }) => {
-      if (data.solicitud_id === solicitudId && data.usuario_id !== userId) {
-        setOtroUsuarioEscribiendo(true);
-        if (typingSafetyTimeoutRef.current) clearTimeout(typingSafetyTimeoutRef.current);
-        typingSafetyTimeoutRef.current = setTimeout(() => {
-          setOtroUsuarioEscribiendo(false);
-        }, 4000);
-      }
-    });
-
-    socket.on('usuario_detuvo_escribiendo', (data: { solicitud_id: string; usuario_id: string }) => {
-      if (data.solicitud_id === solicitudId && data.usuario_id !== userId) {
-        setOtroUsuarioEscribiendo(false);
-        if (typingSafetyTimeoutRef.current) clearTimeout(typingSafetyTimeoutRef.current);
-      }
-    });
-
-    socket.on('chat_bloqueado', (data: { solicitud_id: string; motivo: string; bloqueador_id?: string }) => {
-      setBloqueado(true);
-      setEstadoSolicitud('BLOQUEADO');
-      setBloqueoInfo({
-        motivo: data.motivo,
-        es_bloqueador: data.bloqueador_id === userId,
-      });
-      setLlamadaEntrante(null);
-      setLlamadaSaliente(false);
-      setSalaUrlActiva(null);
-    });
-
-    socket.on('propuesta_actualizada', (data: { mensaje_id: string; contenido: string; nuevo_estado: string }) => {
-      setMensajes((prev) =>
-        prev.map((m) =>
-          m.id === data.mensaje_id ? { ...m, contenido: data.contenido } : m
-        )
-      );
-    });
-
-    socket.on('call:invite', (data: VideoCallInvitation) => {
-      console.log('📞 [Web] Invitación de videollamada recibida:', data);
+    socket.on("call:invite", (data: VideoCallInvitation) => {
+      console.log("📞 [Web] Invitación de videollamada recibida:", data);
       if (data.solicitud_id === solicitudId) {
         setLlamadaEntrante(data);
       }
     });
 
-    socket.on('call:ringing', () => {
-      console.log('📞 [Web] El destinatario está recibiendo la llamada...');
+    socket.on("call:ringing", () => {
+      console.log("📞 [Web] El destinatario está recibiendo la llamada...");
     });
 
-    socket.on('call:accepted', (data: { solicitud_id: string; roomUrl: string }) => {
-      console.log('📞 [Web] Llamada aceptada, ingresando a sala:', data.roomUrl);
+    socket.on(
+      "call:accepted",
+      (data: { solicitud_id: string; roomUrl: string }) => {
+        console.log(
+          "📞 [Web] Llamada aceptada, ingresando a sala:",
+          data.roomUrl,
+        );
+        setLlamadaSaliente(false);
+        setLlamadaEntrante(null);
+        setSalaUrlActiva(data.roomUrl);
+      },
+    );
+
+    socket.on("call:rejected", (data: { reason?: string }) => {
+      console.log("📞 [Web] Llamada rechazada:", data.reason);
+      alert(data.reason || "La videollamada fue rechazada.");
       setLlamadaSaliente(false);
       setLlamadaEntrante(null);
-      setSalaUrlActiva(data.roomUrl);
     });
 
-    socket.on('call:rejected', (data: { reason?: string }) => {
-      console.log('📞 [Web] Llamada rechazada:', data.reason);
-      alert(data.reason || 'La videollamada fue rechazada.');
-      setLlamadaSaliente(false);
-      setLlamadaEntrante(null);
-    });
-
-    socket.on('call:ended', () => {
-      console.log('📞 [Web] Llamada finalizada por el interlocutor');
+    socket.on("call:ended", () => {
+      console.log("📞 [Web] Llamada finalizada por el interlocutor");
       setSalaUrlActiva(null);
       setLlamadaSaliente(false);
       setLlamadaEntrante(null);
     });
 
-    socket.on('call:error', (err: { mensaje?: string; error?: string }) => {
-      const msg = err.mensaje || err.error || 'Error al conectar videollamada';
-      console.warn('📞 [Web] Error en videollamada:', msg);
+    socket.on("call:error", (err: { mensaje?: string; error?: string }) => {
+      const msg = err.mensaje || err.error || "Error al conectar videollamada";
+      console.warn("📞 [Web] Error en videollamada:", msg);
       alert(msg);
       setLlamadaSaliente(false);
       setLlamadaEntrante(null);
     });
 
-    socket.on('error_chat', (err: { mensaje: string }) => {
-      console.warn('Socket error_chat:', err.mensaje);
+    socket.on("error_chat", (err: { mensaje: string }) => {
+      console.warn("Socket error_chat:", err.mensaje);
     });
 
     return () => {
-      if (typingSafetyTimeoutRef.current) clearTimeout(typingSafetyTimeoutRef.current);
-      if (typingDebounceTimeoutRef.current) clearTimeout(typingDebounceTimeoutRef.current);
+      if (typingSafetyTimeoutRef.current)
+        clearTimeout(typingSafetyTimeoutRef.current);
+      if (typingDebounceTimeoutRef.current)
+        clearTimeout(typingDebounceTimeoutRef.current);
       socket.disconnect();
       socketRef.current = null;
     };
@@ -306,19 +370,25 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
   const notificarEscribiendo = useCallback(() => {
     if (!socketRef.current || bloqueado) return;
 
-    socketRef.current.emit('escribiendo', { solicitud_id: solicitudId });
-    if (typingDebounceTimeoutRef.current) clearTimeout(typingDebounceTimeoutRef.current);
+    socketRef.current.emit("escribiendo", { solicitud_id: solicitudId });
+    if (typingDebounceTimeoutRef.current)
+      clearTimeout(typingDebounceTimeoutRef.current);
     typingDebounceTimeoutRef.current = setTimeout(() => {
       if (socketRef.current?.connected) {
-        socketRef.current.emit('detener_escribiendo', { solicitud_id: solicitudId });
+        socketRef.current.emit("detener_escribiendo", {
+          solicitud_id: solicitudId,
+        });
       }
     }, 2500);
   }, [solicitudId, bloqueado]);
 
   const notificarDetuvoEscribiendo = useCallback(() => {
-    if (typingDebounceTimeoutRef.current) clearTimeout(typingDebounceTimeoutRef.current);
+    if (typingDebounceTimeoutRef.current)
+      clearTimeout(typingDebounceTimeoutRef.current);
     if (socketRef.current?.connected) {
-      socketRef.current.emit('detener_escribiendo', { solicitud_id: solicitudId });
+      socketRef.current.emit("detener_escribiendo", {
+        solicitud_id: solicitudId,
+      });
     }
   }, [solicitudId]);
 
@@ -335,7 +405,7 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
         adjunto_url: null,
         enviado_en: new Date().toISOString(),
         leido: false,
-        status: 'ENVIANDO',
+        status: "ENVIANDO",
       };
 
       setMensajes((prev) => [...prev, mensajeOptimista]);
@@ -343,35 +413,40 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
       if (!socketRef.current) return;
 
       socketRef.current.emit(
-        'enviar_mensaje',
+        "enviar_mensaje",
         {
           solicitud_id: solicitudId,
           contenido: texto.trim(),
           temp_id: tempId,
         },
-        (ack: { error?: string; status?: string; mensaje?: MensajeChatModel; mensaje_id?: string }) => {
+        (ack: {
+          error?: string;
+          status?: string;
+          mensaje?: MensajeChatModel;
+          mensaje_id?: string;
+        }) => {
           if (ack?.error) {
             alert(ack.error);
             setMensajes((prev) => prev.filter((m) => m.id !== tempId));
-          } else if (ack?.status === 'ENVIADO' || ack?.status === 'ok') {
+          } else if (ack?.status === "ENVIADO" || ack?.status === "ok") {
             const realId = ack.mensaje?.id || ack.mensaje_id || tempId;
             setMensajes((prev) =>
               prev.map((m) =>
                 m.id === tempId
                   ? {
-                    ...m,
-                    id: realId,
-                    enviado_en: ack.mensaje?.enviado_en || m.enviado_en,
-                    status: 'ENVIADO',
-                  }
-                  : m
-              )
+                      ...m,
+                      id: realId,
+                      enviado_en: ack.mensaje?.enviado_en || m.enviado_en,
+                      status: "ENVIADO",
+                    }
+                  : m,
+              ),
             );
           }
-        }
+        },
       );
     },
-    [solicitudId, userId, bloqueado]
+    [solicitudId, userId, bloqueado],
   );
 
   const subirArchivo = useCallback(
@@ -382,31 +457,42 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
         setSubiendoFoto(true);
 
         const isAudio =
-          file.type?.startsWith('audio/') ||
-          (file instanceof File && Boolean(file.name.match(/\.(webm|mp3|wav|m4a|ogg)$/i)));
-        const fieldName = isAudio ? 'audio' : 'foto';
-        const fileName = file instanceof File ? file.name : isAudio ? 'nota-audio.webm' : 'adjunto.jpg';
+          file.type?.startsWith("audio/") ||
+          (file instanceof File &&
+            Boolean(file.name.match(/\.(webm|mp3|wav|m4a|ogg)$/i)));
+        const fieldName = isAudio ? "audio" : "foto";
+        const fileName =
+          file instanceof File
+            ? file.name
+            : isAudio
+              ? "nota-audio.webm"
+              : "adjunto.jpg";
 
         const formData = new FormData();
         formData.append(fieldName, file, fileName);
 
-        const res = await fetch(`${API_BASE_URL}/api/chat/${solicitudId}/adjunto`, {
-          method: 'POST',
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        const res = await fetch(
+          `${API_BASE_URL}/api/chat/${solicitudId}/adjunto`,
+          {
+            method: "POST",
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: formData,
           },
-          body: formData,
-        });
+        );
 
         const data = await res.json();
         if (!res.ok) {
-          throw new Error(data.error || 'No se pudo subir el archivo adjunto');
+          throw new Error(data.error || "No se pudo subir el archivo adjunto");
         }
 
         const { adjunto_url } = data;
         if (adjunto_url) {
           const tempId = `temp-${Date.now()}`;
-          const msgLabel = customLabel || (isAudio ? '🎤 Mensaje de voz' : '📷 Fotografía adjunta');
+          const msgLabel =
+            customLabel ||
+            (isAudio ? "🎤 Mensaje de voz" : "📷 Fotografía adjunta");
           const mensajeOptimista: MensajeChatModel = {
             id: tempId,
             solicitud_id: solicitudId,
@@ -415,59 +501,66 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
             adjunto_url,
             enviado_en: new Date().toISOString(),
             leido: false,
-            status: 'ENVIANDO',
+            status: "ENVIANDO",
           };
 
           setMensajes((prev) => [...prev, mensajeOptimista]);
 
           if (socketRef.current?.connected) {
             socketRef.current.emit(
-              'enviar_mensaje',
+              "enviar_mensaje",
               {
                 solicitud_id: solicitudId,
                 contenido: msgLabel,
                 adjunto_url,
                 temp_id: tempId,
               },
-              (ack: { error?: string; status?: string; mensaje?: MensajeChatModel }) => {
+              (ack: {
+                error?: string;
+                status?: string;
+                mensaje?: MensajeChatModel;
+              }) => {
                 if (ack?.error) {
                   alert(ack.error);
                   setMensajes((prev) => prev.filter((m) => m.id !== tempId));
-                } else if (ack?.status === 'ENVIADO' || ack?.status === 'ok') {
+                } else if (ack?.status === "ENVIADO" || ack?.status === "ok") {
                   const realId = ack.mensaje?.id || tempId;
                   setMensajes((prev) =>
                     prev.map((m) =>
                       m.id === tempId
-                        ? { ...m, id: realId, status: 'ENVIADO' }
-                        : m
-                    )
+                        ? { ...m, id: realId, status: "ENVIADO" }
+                        : m,
+                    ),
                   );
                 }
-              }
+              },
             );
           }
         }
       } catch (error: unknown) {
-        const msg = error instanceof Error ? error.message : 'Error al adjuntar archivo al chat';
-        console.error('Error al subir adjunto de chat:', msg);
+        const msg =
+          error instanceof Error
+            ? error.message
+            : "Error al adjuntar archivo al chat";
+        console.error("Error al subir adjunto de chat:", msg);
         alert(msg);
       } finally {
         setSubiendoFoto(false);
       }
     },
-    [solicitudId, token, userId, bloqueado]
+    [solicitudId, token, userId, bloqueado],
   );
 
   const responderPropuesta = useCallback(
     async (
       mensajeId: string,
-      nuevoEstado: 'ACEPTADA' | 'REPROGRAMAR',
-      respuestaTexto?: string
+      nuevoEstado: "ACEPTADA" | "REPROGRAMAR",
+      respuestaTexto?: string,
     ) => {
       if (!mensajeId || bloqueado) return;
 
       if (socketRef.current?.connected) {
-        socketRef.current.emit('responder_propuesta', {
+        socketRef.current.emit("responder_propuesta", {
           solicitud_id: solicitudId,
           mensaje_id: mensajeId,
           nuevo_estado: nuevoEstado,
@@ -477,18 +570,18 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
 
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/chat/${solicitudId}/propuesta/${mensajeId}`,
+          `${import.meta.env.VITE_API_URL || "https://expertoya-backend.onrender.com"}/api/chat/${solicitudId}/propuesta/${mensajeId}`,
           {
-            method: 'PUT',
+            method: "PUT",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
               nuevo_estado: nuevoEstado,
               respuesta_texto: respuestaTexto,
             }),
-          }
+          },
         );
         if (res.ok) {
           const data = await res.json();
@@ -497,16 +590,16 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
               prev.map((m) =>
                 m.id === mensajeId
                   ? { ...m, contenido: data.mensaje_actualizado.contenido }
-                  : m
-              )
+                  : m,
+              ),
             );
           }
         }
       } catch (err) {
-        console.warn('Error en fallback REST de responderPropuesta:', err);
+        console.warn("Error en fallback REST de responderPropuesta:", err);
       }
     },
-    [solicitudId, token, bloqueado]
+    [solicitudId, token, bloqueado],
   );
 
   const iniciarVideollamada = useCallback(async () => {
@@ -514,24 +607,24 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
     try {
       setLlamadaSaliente(true);
       socketRef.current.emit(
-        'call:invite',
+        "call:invite",
         { solicitud_id: solicitudId },
         (res: { ok?: boolean; error?: string; roomUrl?: string }) => {
           if (res?.error) {
             alert(res.error);
             setLlamadaSaliente(false);
           }
-        }
+        },
       );
     } catch (err) {
-      console.error('Error al emitir call:invite:', err);
+      console.error("Error al emitir call:invite:", err);
       setLlamadaSaliente(false);
     }
   }, [solicitudId, bloqueado]);
 
   const aceptarVideollamada = useCallback((invitation: VideoCallInvitation) => {
     if (!socketRef.current) return;
-    socketRef.current.emit('call:accept', {
+    socketRef.current.emit("call:accept", {
       solicitud_id: invitation.solicitud_id,
       roomUrl: invitation.roomUrl,
     });
@@ -539,30 +632,39 @@ export const useChatSocket = ({ solicitudId, userId, token }: UseChatSocketParam
     setSalaUrlActiva(invitation.roomUrl);
   }, []);
 
-  const rechazarVideollamada = useCallback((invitation: VideoCallInvitation, reason?: string) => {
-    if (!socketRef.current) return;
-    socketRef.current.emit('call:reject', {
-      solicitud_id: invitation.solicitud_id,
-      reason: reason || 'Llamada rechazada por el usuario',
-    });
-    setLlamadaEntrante(null);
-  }, []);
+  const rechazarVideollamada = useCallback(
+    (invitation: VideoCallInvitation, reason?: string) => {
+      if (!socketRef.current) return;
+      socketRef.current.emit("call:reject", {
+        solicitud_id: invitation.solicitud_id,
+        reason: reason || "Llamada rechazada por el usuario",
+      });
+      setLlamadaEntrante(null);
+    },
+    [],
+  );
 
   const cancelarLlamadaSaliente = useCallback(() => {
     if (socketRef.current) {
-      socketRef.current.emit('call:end', { solicitud_id: solicitudId });
+      socketRef.current.emit("call:end", { solicitud_id: solicitudId });
     }
     setLlamadaSaliente(false);
   }, [solicitudId]);
 
-  const finalizarVideollamada = useCallback((duracion?: number) => {
-    if (socketRef.current) {
-      socketRef.current.emit('call:end', { solicitud_id: solicitudId, duracion });
-    }
-    setSalaUrlActiva(null);
-    setLlamadaSaliente(false);
-    setLlamadaEntrante(null);
-  }, [solicitudId]);
+  const finalizarVideollamada = useCallback(
+    (duracion?: number) => {
+      if (socketRef.current) {
+        socketRef.current.emit("call:end", {
+          solicitud_id: solicitudId,
+          duracion,
+        });
+      }
+      setSalaUrlActiva(null);
+      setLlamadaSaliente(false);
+      setLlamadaEntrante(null);
+    },
+    [solicitudId],
+  );
 
   return {
     mensajes,

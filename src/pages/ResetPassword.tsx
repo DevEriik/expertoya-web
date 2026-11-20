@@ -1,6 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Lock, Eye, EyeOff, CheckCircle2, ArrowRight, Loader2, KeyRound, Check, X } from "lucide-react";
+import {
+  Lock,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  ArrowRight,
+  Loader2,
+  KeyRound,
+  Check,
+  X,
+} from "lucide-react";
 import { Logo } from "../components/Logo";
 
 export const ResetPassword = () => {
@@ -24,7 +34,8 @@ export const ResetPassword = () => {
   const hasMinLength = password.length >= 8;
   const hasNumber = /\d/.test(password);
   const passwordsMatch = password.length > 0 && password === confirmPassword;
-  const isValid = hasMinLength && hasNumber && passwordsMatch && Boolean(token.trim());
+  const isValid =
+    hasMinLength && hasNumber && passwordsMatch && Boolean(token.trim());
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -61,14 +72,17 @@ export const ResetPassword = () => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:3000/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token: token.trim(),
-          password,
-        }),
-      });
+      const response = await fetch(
+        "https://expertoya-backend.onrender.com/api/auth/reset-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: token.trim(),
+            password,
+          }),
+        },
+      );
 
       const data = await response.json();
       if (!response.ok) {
@@ -91,7 +105,10 @@ export const ResetPassword = () => {
     <div className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 bg-background dark:bg-dark-bg transition-colors duration-300 relative py-12">
       {/* Brand Logo outside card */}
       <div className="mb-6 sm:mb-8 text-center">
-        <Link to="/" className="inline-flex items-center justify-center group hover:opacity-90 transition-opacity">
+        <Link
+          to="/"
+          className="inline-flex items-center justify-center group hover:opacity-90 transition-opacity"
+        >
           <Logo className="h-12 sm:h-14 w-auto" />
         </Link>
       </div>
@@ -104,7 +121,8 @@ export const ResetPassword = () => {
                 Nueva Contraseña
               </h2>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Ingresa y confirma tu nueva clave para recuperar el acceso a tu cuenta.
+                Ingresa y confirma tu nueva clave para recuperar el acceso a tu
+                cuenta.
               </p>
             </>
           ) : (
@@ -116,8 +134,12 @@ export const ResetPassword = () => {
                 ¡Contraseña Actualizada!
               </h2>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Tu contraseña ha sido modificada con éxito. Serás redirigido al inicio de sesión en{" "}
-                <strong className="text-primary font-extrabold">{redirectCountdown}s</strong>...
+                Tu contraseña ha sido modificada con éxito. Serás redirigido al
+                inicio de sesión en{" "}
+                <strong className="text-primary font-extrabold">
+                  {redirectCountdown}s
+                </strong>
+                ...
               </p>
             </>
           )}
@@ -200,7 +222,11 @@ export const ResetPassword = () => {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showConfirmPassword ? (
+                    <EyeOff size={18} />
+                  ) : (
+                    <Eye size={18} />
+                  )}
                 </button>
               </div>
             </div>
@@ -216,7 +242,13 @@ export const ResetPassword = () => {
                 ) : (
                   <X size={14} className="text-gray-400" />
                 )}
-                <span className={hasMinLength ? "text-secondary font-bold" : "text-gray-500 dark:text-gray-400"}>
+                <span
+                  className={
+                    hasMinLength
+                      ? "text-secondary font-bold"
+                      : "text-gray-500 dark:text-gray-400"
+                  }
+                >
                   Mínimo 8 caracteres
                 </span>
               </div>
@@ -226,7 +258,13 @@ export const ResetPassword = () => {
                 ) : (
                   <X size={14} className="text-gray-400" />
                 )}
-                <span className={hasNumber ? "text-secondary font-bold" : "text-gray-500 dark:text-gray-400"}>
+                <span
+                  className={
+                    hasNumber
+                      ? "text-secondary font-bold"
+                      : "text-gray-500 dark:text-gray-400"
+                  }
+                >
                   Al menos un número
                 </span>
               </div>
@@ -236,7 +274,13 @@ export const ResetPassword = () => {
                 ) : (
                   <X size={14} className="text-gray-400" />
                 )}
-                <span className={passwordsMatch ? "text-secondary font-bold" : "text-gray-500 dark:text-gray-400"}>
+                <span
+                  className={
+                    passwordsMatch
+                      ? "text-secondary font-bold"
+                      : "text-gray-500 dark:text-gray-400"
+                  }
+                >
                   Las contraseñas coinciden
                 </span>
               </div>

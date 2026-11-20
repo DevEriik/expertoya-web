@@ -48,11 +48,15 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
 }) => {
   const [titulo, setTitulo] = useState(initialValues?.titulo || "");
   const [categoria, setCategoria] = useState(
-    initialValues?.categoria || CATEGORIAS_DISPONIBLES[0]
+    initialValues?.categoria || CATEGORIAS_DISPONIBLES[0],
   );
   const [precio, setPrecio] = useState(initialValues?.precio || "");
-  const [duracion, setDuracion] = useState(initialValues?.duracion || "1 a 2 horas");
-  const [descripcion, setDescripcion] = useState(initialValues?.descripcion || "");
+  const [duracion, setDuracion] = useState(
+    initialValues?.duracion || "1 a 2 horas",
+  );
+  const [descripcion, setDescripcion] = useState(
+    initialValues?.descripcion || "",
+  );
   const [fotos, setFotos] = useState<string[]>(initialValues?.fotos || []);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -61,7 +65,7 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState<boolean>(
-    typeof navigator !== "undefined" ? navigator.onLine : true
+    typeof navigator !== "undefined" ? navigator.onLine : true,
   );
 
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -78,7 +82,7 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
     const handleOffline = () => {
       setIsOnline(false);
       setErrorMessage(
-        "El dispositivo ha perdido la conexión a internet. El asistente IA requiere una conexión activa."
+        "El dispositivo ha perdido la conexión a internet. El asistente IA requiere una conexión activa.",
       );
     };
 
@@ -129,21 +133,21 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
 
     if (!navigator.onLine || !isOnline) {
       setErrorMessage(
-        "Sin conexión a internet: Verifica tu conexión a la red antes de solicitar asistencia a la IA."
+        "Sin conexión a internet: Verifica tu conexión a la red antes de solicitar asistencia a la IA.",
       );
       return;
     }
 
     if (!titulo.trim()) {
       setErrorMessage(
-        "Por favor ingresa un título representativo del servicio antes de generar la descripción."
+        "Por favor ingresa un título representativo del servicio antes de generar la descripción.",
       );
       return;
     }
 
     if (!categoria.trim()) {
       setErrorMessage(
-        "Por favor selecciona una categoría u oficio para orientar la propuesta."
+        "Por favor selecciona una categoría u oficio para orientar la propuesta.",
       );
       return;
     }
@@ -165,7 +169,8 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
 
     try {
       const apiUrl =
-        (import.meta.env.VITE_API_URL || "http://localhost:3000") +
+        (import.meta.env.VITE_API_URL ||
+          "https://expertoya-backend.onrender.com") +
         "/api/ia/generate-description";
 
       const response = await fetch(apiUrl, {
@@ -196,16 +201,16 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
         if (response.status === 400) {
           throw new Error(
             errorData.error ||
-            "Los datos del servicio contienen términos no permitidos o incompletos."
+              "Los datos del servicio contienen términos no permitidos o incompletos.",
           );
         } else if (response.status === 429) {
           throw new Error(
-            "El servicio de IA se encuentra saturado. Por favor intenta en unos instantes."
+            "El servicio de IA se encuentra saturado. Por favor intenta en unos instantes.",
           );
         } else {
           throw new Error(
             errorData.error ||
-            "Ocurrió un error en el servidor de IA al redactar la propuesta comercial."
+              "Ocurrió un error en el servidor de IA al redactar la propuesta comercial.",
           );
         }
       }
@@ -214,13 +219,13 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
 
       if (!data.descripcion || typeof data.descripcion !== "string") {
         throw new Error(
-          "El asistente no pudo devolver una propuesta válida. Intenta nuevamente."
+          "El asistente no pudo devolver una propuesta válida. Intenta nuevamente.",
         );
       }
 
       setDescripcion(data.descripcion.trim());
       setSuccessNotice(
-        "¡Propuesta comercial generada con éxito! Puedes revisarla y editarla libremente antes de guardar."
+        "¡Propuesta comercial generada con éxito! Puedes revisarla y editarla libremente antes de guardar.",
       );
     } catch (err: unknown) {
       clearTimeout(timeoutId);
@@ -228,7 +233,7 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
 
       if (err instanceof Error && err.name === "AbortError") {
         setErrorMessage(
-          "Tiempo de espera agotado (límite de 10 segundos excedido). La IA no respondió a tiempo; intenta nuevamente."
+          "Tiempo de espera agotado (límite de 10 segundos excedido). La IA no respondió a tiempo; intenta nuevamente.",
         );
       } else {
         const msg =
@@ -259,7 +264,7 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
 
     if (!descripcion.trim()) {
       setErrorMessage(
-        "La descripción del servicio es obligatoria. Puedes redactarla tú o usar el Asistente IA."
+        "La descripción del servicio es obligatoria. Puedes redactarla tú o usar el Asistente IA.",
       );
       return;
     }
@@ -313,7 +318,8 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
             {isEditing ? "Editar Servicio" : "Publicar Nuevo Servicio"}
           </h2>
           <p className="text-sm mt-1 text-slate-600 dark:text-slate-400">
-            Completa la información para ofrecer tu trabajo a miles de clientes en ExpertoYa.
+            Completa la información para ofrecer tu trabajo a miles de clientes
+            en ExpertoYa.
           </p>
         </div>
       </div>
@@ -338,7 +344,9 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
               aria-hidden="true"
             />
             <div className="flex-1 text-sm font-medium leading-relaxed">
-              <span className="font-bold block mb-0.5">Atención requerida:</span>
+              <span className="font-bold block mb-0.5">
+                Atención requerida:
+              </span>
               {errorMessage}
             </div>
             <button
@@ -361,7 +369,10 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
               border border-emerald-500 dark:border-emerald-400
               text-emerald-700 dark:text-emerald-300"
           >
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <CheckCircle2
+              className="w-5 h-5 flex-shrink-0 mt-0.5"
+              aria-hidden="true"
+            />
             <div className="flex-1 text-sm font-medium leading-relaxed">
               {successNotice}
             </div>
@@ -382,7 +393,8 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
               htmlFor="titulo-servicio"
               className="block text-xs font-bold uppercase tracking-wider mb-2 text-[#283593] dark:text-[#FDFCF4]"
             >
-              Título del Servicio <span className="text-[#EF4444] dark:text-[#F87171]">*</span>
+              Título del Servicio{" "}
+              <span className="text-[#EF4444] dark:text-[#F87171]">*</span>
             </label>
             <input
               id="titulo-servicio"
@@ -405,7 +417,8 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
                 htmlFor="categoria-servicio"
                 className="block text-xs font-bold uppercase tracking-wider mb-2 text-[#283593] dark:text-[#FDFCF4]"
               >
-                Categoría / Oficio <span className="text-[#EF4444] dark:text-[#F87171]">*</span>
+                Categoría / Oficio{" "}
+                <span className="text-[#EF4444] dark:text-[#F87171]">*</span>
               </label>
               <select
                 id="categoria-servicio"
@@ -430,7 +443,8 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
                 htmlFor="precio-servicio"
                 className="block text-xs font-bold uppercase tracking-wider mb-2 text-[#283593] dark:text-[#FDFCF4]"
               >
-                Precio de Referencia ($ARS) <span className="text-[#EF4444] dark:text-[#F87171]">*</span>
+                Precio de Referencia ($ARS){" "}
+                <span className="text-[#EF4444] dark:text-[#F87171]">*</span>
               </label>
               <input
                 id="precio-servicio"
@@ -470,14 +484,17 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
           </div>
 
           <div className="pt-2">
-            <div className="rounded-2xl p-5 border transition-all duration-200
+            <div
+              className="rounded-2xl p-5 border transition-all duration-200
               bg-[#FDFCF4]/60 dark:bg-[#121826]/70
-              border-slate-200 dark:border-slate-700/80">
-
+              border-slate-200 dark:border-slate-700/80"
+            >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center
-                    bg-[#00BFA5]/15 dark:bg-[#33EFA5]/20 text-[#00BFA5] dark:text-[#33EFA5]">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center
+                    bg-[#00BFA5]/15 dark:bg-[#33EFA5]/20 text-[#00BFA5] dark:text-[#33EFA5]"
+                  >
                     <Sparkles className="w-4 h-4" />
                   </div>
                   <div>
@@ -485,7 +502,8 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
                       Asistente IA para Redacción Comercial
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Redacta automáticamente una propuesta persuasiva basada en tu título y oficio.
+                      Redacta automáticamente una propuesta persuasiva basada en
+                      tu título y oficio.
                     </p>
                   </div>
                 </div>
@@ -543,7 +561,9 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
                     className="text-xs font-bold uppercase tracking-wider text-[#283593] dark:text-[#FDFCF4]"
                   >
                     Descripción del Servicio (Editable por el profesional){" "}
-                    <span className="text-[#EF4444] dark:text-[#F87171]">*</span>
+                    <span className="text-[#EF4444] dark:text-[#F87171]">
+                      *
+                    </span>
                   </label>
                   <span className="text-xs text-slate-400 dark:text-slate-500">
                     {descripcion.length} caracteres
@@ -567,7 +587,8 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
                 <p className="mt-2 text-xs flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                   <HelpCircle className="w-3.5 h-3.5 flex-shrink-0" />
                   <span>
-                    El texto sugerido por la IA se inyecta aquí para que lo adaptes a tu estilo antes de publicar.
+                    El texto sugerido por la IA se inyecta aquí para que lo
+                    adaptes a tu estilo antes de publicar.
                   </span>
                 </p>
               </div>
@@ -651,7 +672,8 @@ export const ServiceFormWithAI: React.FC<ServiceFormWithAIProps> = ({
                   Haz clic para adjuntar fotos demostrativas de tu trabajo
                 </p>
                 <p className="text-xs text-slate-500 dark:text-gray-400">
-                  Puedes subir hasta 5 fotos en formato JPG o PNG. La primera foto será la portada.
+                  Puedes subir hasta 5 fotos en formato JPG o PNG. La primera
+                  foto será la portada.
                 </p>
               </div>
             )}

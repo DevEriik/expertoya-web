@@ -75,12 +75,15 @@ export const ProfessionalProfile = () => {
       setError(null);
       try {
         const [resProfesionales, resServicios] = await Promise.all([
-          fetch("http://localhost:3000/api/profesionales/public", {
-            signal: controller.signal,
-          }),
           fetch(
-            `http://localhost:3000/api/profesionales/public/${id}/services`,
-            { signal: controller.signal }
+            "https://expertoya-backend.onrender.com/api/profesionales/public",
+            {
+              signal: controller.signal,
+            },
+          ),
+          fetch(
+            `https://expertoya-backend.onrender.com/api/profesionales/public/${id}/services`,
+            { signal: controller.signal },
           ),
         ]);
 
@@ -101,7 +104,7 @@ export const ProfessionalProfile = () => {
         if (err instanceof DOMException && err.name === "AbortError") return;
         console.error("Error al cargar el perfil:", err);
         setError(
-          err instanceof Error ? err.message : "Ocurrió un error inesperado"
+          err instanceof Error ? err.message : "Ocurrió un error inesperado",
         );
       } finally {
         if (!controller.signal.aborted) setCargando(false);
@@ -122,7 +125,7 @@ export const ProfessionalProfile = () => {
       setCargandoReviews(true);
       try {
         const res = await fetch(
-          `http://localhost:3000/api/professionals/${id}/reviews?page=${reviewsPage}&limit=5`
+          `https://expertoya-backend.onrender.com/api/professionals/${id}/reviews?page=${reviewsPage}&limit=5`,
         );
         if (res.ok && !ignore) {
           const json = await res.json();
@@ -160,7 +163,7 @@ export const ProfessionalProfile = () => {
     setEnviandoRespuesta(true);
     try {
       const res = await fetch(
-        `http://localhost:3000/api/reviews/${reviewId}/reply`,
+        `https://expertoya-backend.onrender.com/api/reviews/${reviewId}/reply`,
         {
           method: "POST",
           headers: {
@@ -168,13 +171,13 @@ export const ProfessionalProfile = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ respuesta: replyText.trim() }),
-        }
+        },
       );
 
       const json = await res.json();
       if (!res.ok) {
         throw new Error(
-          json.detalle || json.error || "Error al publicar la respuesta"
+          json.detalle || json.error || "Error al publicar la respuesta",
         );
       }
 
@@ -182,17 +185,20 @@ export const ProfessionalProfile = () => {
         prev.map((r) =>
           r.id === reviewId
             ? {
-              ...r,
-              respuestaProfesional: replyText.trim(),
-              fechaRespuesta: new Date().toISOString(),
-            }
-            : r
-        )
+                ...r,
+                respuestaProfesional: replyText.trim(),
+                fechaRespuesta: new Date().toISOString(),
+              }
+            : r,
+        ),
       );
       setReplyingToId(null);
       setReplyText("");
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : "No se pudo registrar la réplica.";
+      const msg =
+        error instanceof Error
+          ? error.message
+          : "No se pudo registrar la réplica.";
       alert(msg);
     } finally {
       setEnviandoRespuesta(false);
@@ -258,7 +264,8 @@ export const ProfessionalProfile = () => {
 
   const nombre = `${profesional.usuario.nombre} ${profesional.usuario.apellido}`;
   const isCurrentPro = Boolean(
-    user?.id && (user.id === profesional.id || user.id === profesional.usuario.id)
+    user?.id &&
+    (user.id === profesional.id || user.id === profesional.usuario.id),
   );
 
   const rating =
@@ -268,7 +275,7 @@ export const ProfessionalProfile = () => {
   const totalResenas =
     reviewsStats.totalResenas > 0
       ? reviewsStats.totalResenas
-      : profesional.totalResenas ?? profesional.total_resenas ?? 0;
+      : (profesional.totalResenas ?? profesional.total_resenas ?? 0);
 
   return (
     <main className="min-h-screen pb-20 bg-background dark:bg-dark-bg transition-colors duration-200 font-sans">
@@ -314,21 +321,20 @@ export const ProfessionalProfile = () => {
               {/* Bloque Estelar debajo de la cabecera */}
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 mt-4 text-sm font-medium text-dark/60 dark:text-gray-400">
                 <div className="flex items-center gap-1.5 font-bold text-dark dark:text-gray-200 bg-amber-50 dark:bg-amber-950/30 px-3 py-1 rounded-xl border border-amber-200/50 dark:border-amber-900/40">
-                  <Star
-                    size={18}
-                    className="text-[#F59E0B] fill-[#F59E0B]"
-                  />
+                  <Star size={18} className="text-[#F59E0B] fill-[#F59E0B]" />
                   <span className="text-base text-slate-900 dark:text-white font-extrabold">
                     {rating > 0 ? rating.toFixed(1) : "Nuevo"}
                   </span>
                   <span className="text-xs text-slate-500 dark:text-gray-400 font-semibold ml-0.5">
-                    ({totalResenas} {totalResenas === 1 ? "opinión" : "opiniones"})
+                    ({totalResenas}{" "}
+                    {totalResenas === 1 ? "opinión" : "opiniones"})
                   </span>
                 </div>
 
                 <span className="flex items-center gap-1">
                   <MapPin size={16} className="text-slate-400" />
-                  {profesional.ubicacion_geografica ?? "Ubicación no disponible"}
+                  {profesional.ubicacion_geografica ??
+                    "Ubicación no disponible"}
                 </span>
 
                 <span className="flex items-center gap-1.5 text-xs text-[#00BFA5] font-bold">
@@ -340,7 +346,8 @@ export const ProfessionalProfile = () => {
                   <span className="flex items-center gap-1.5 text-xs text-[#FF8C00] font-bold bg-orange-50 dark:bg-orange-950/30 px-3 py-1 rounded-xl border border-orange-200/50 dark:border-orange-900/40">
                     <Award size={16} />
                     {profesional.experiencia}{" "}
-                    {profesional.experiencia === 1 ? "año" : "años"} de experiencia
+                    {profesional.experiencia === 1 ? "año" : "años"} de
+                    experiencia
                   </span>
                 ) : null}
               </div>
@@ -456,8 +463,9 @@ export const ProfessionalProfile = () => {
                 Aún no hay opiniones registradas.
               </p>
               <p className="text-slate-400 text-xs mt-1 max-w-md mx-auto">
-                Los clientes pueden calificar únicamente una vez que el profesional
-                finaliza el trabajo y el pago en custodia es liberado.
+                Los clientes pueden calificar únicamente una vez que el
+                profesional finaliza el trabajo y el pago en custodia es
+                liberado.
               </p>
             </div>
           ) : (
@@ -497,11 +505,14 @@ export const ProfessionalProfile = () => {
                             </span>
                           </div>
                           <span className="text-xs text-slate-400 block mt-0.5">
-                            {new Date(rev.createdAt).toLocaleDateString("es-AR", {
-                              day: "2-digit",
-                              month: "long",
-                              year: "numeric",
-                            })}
+                            {new Date(rev.createdAt).toLocaleDateString(
+                              "es-AR",
+                              {
+                                day: "2-digit",
+                                month: "long",
+                                year: "numeric",
+                              },
+                            )}
                           </span>
                         </div>
                       </div>
@@ -558,13 +569,15 @@ export const ProfessionalProfile = () => {
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center gap-1.5 text-xs font-bold text-[#00BFA5]">
                             <CornerDownRight size={14} />
-                            <span>Respuesta de {profesional.usuario.nombre}</span>
+                            <span>
+                              Respuesta de {profesional.usuario.nombre}
+                            </span>
                           </div>
                           {rev.fechaRespuesta && (
                             <span className="text-[11px] text-slate-400">
                               {new Date(rev.fechaRespuesta).toLocaleDateString(
                                 "es-AR",
-                                { day: "2-digit", month: "short" }
+                                { day: "2-digit", month: "short" },
                               )}
                             </span>
                           )}
@@ -611,7 +624,9 @@ export const ProfessionalProfile = () => {
                               <button
                                 type="button"
                                 onClick={() => handleEnviarRespuesta(rev.id)}
-                                disabled={enviandoRespuesta || !replyText.trim()}
+                                disabled={
+                                  enviandoRespuesta || !replyText.trim()
+                                }
                                 className="px-4 py-1.5 rounded-lg text-xs font-bold bg-[#FF8C00] text-white hover:bg-[#E67E00] transition-colors flex items-center gap-1.5 disabled:opacity-60 cursor-pointer shadow-sm shadow-[#FF8C00]/30"
                               >
                                 {enviandoRespuesta ? (
