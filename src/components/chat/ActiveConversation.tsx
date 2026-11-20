@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import type { ChatSession, UserRole } from '../../types/chat';
+import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+import type { ChatSession, UserRole } from "../../types/chat";
 import {
   ArrowLeft,
   Video,
@@ -31,11 +31,11 @@ import {
   Ban,
   AlertTriangle,
   AlertOctagon,
-} from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { useChatSocket } from '../../hooks/useChatSocket';
-import { VoiceNotePlayer } from './VoiceNotePlayer';
-import VideoCallRoom from './VideoCallRoom';
+} from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { useChatSocket } from "../../hooks/useChatSocket";
+import { VoiceNotePlayer } from "./VoiceNotePlayer";
+import VideoCallRoom from "./VideoCallRoom";
 import {
   isPropuestaVisita,
   parsePropuestaVisita,
@@ -43,8 +43,8 @@ import {
   isAudioAttachment,
   buildGoogleCalendarUrl,
   type PropuestaVisitaData,
-} from '../../types/chat';
-import { analizarSeguridadMensaje } from '../../utils/security';
+} from "../../types/chat";
+import { analizarSeguridadMensaje } from "../../utils/security";
 
 interface Props {
   chat: ChatSession;
@@ -56,17 +56,17 @@ interface Props {
 }
 
 const getDefaultSuggestions = (role: UserRole) =>
-  role === 'CLIENTE'
+  role === "CLIENTE"
     ? [
-      '¿A qué hora podrías pasar a revisar?',
-      '¿Qué repuestos o materiales necesitarías?',
-      '¡Genial, te espero entonces! Muchas gracias.',
-    ]
+        "¿A qué hora podrías pasar a revisar?",
+        "¿Qué repuestos o materiales necesitarías?",
+        "¡Genial, te espero entonces! Muchas gracias.",
+      ]
     : [
-      '¡Genial, la espero entonces!',
-      'Estoy en camino al domicilio 🚗',
-      'Llego en aproximadamente 15 minutos.',
-    ];
+        "¡Genial, la espero entonces!",
+        "Estoy en camino al domicilio 🚗",
+        "Llego en aproximadamente 15 minutos.",
+      ];
 
 export const ActiveConversation: React.FC<Props> = ({
   chat,
@@ -76,11 +76,12 @@ export const ActiveConversation: React.FC<Props> = ({
   onReleaseFunds,
 }) => {
   const { user, token } = useAuth();
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState("");
   const [sugerencias, setSugerencias] = useState<string[]>(() =>
-    getDefaultSuggestions(activeRole)
+    getDefaultSuggestions(activeRole),
   );
-  const [cargandoSugerencias, setCargandoSugerencias] = useState<boolean>(false);
+  const [cargandoSugerencias, setCargandoSugerencias] =
+    useState<boolean>(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -89,17 +90,19 @@ export const ActiveConversation: React.FC<Props> = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         setSelectedImage(null);
       }
     };
     if (selectedImage) {
-      window.addEventListener('keydown', handleKeyDown);
+      window.addEventListener("keydown", handleKeyDown);
     }
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedImage]);
 
-  const currentUserId = user?.id || (activeRole === 'CLIENTE' ? chat.client.id : chat.professional.id);
+  const currentUserId =
+    user?.id ||
+    (activeRole === "CLIENTE" ? chat.client.id : chat.professional.id);
 
   const {
     mensajes,
@@ -131,17 +134,24 @@ export const ActiveConversation: React.FC<Props> = ({
 
   const [menuSeguridadAbierto, setMenuSeguridadAbierto] = useState(false);
   const [modalBloqueoAbierto, setModalBloqueoAbierto] = useState(false);
-  const [motivoBloqueo, setMotivoBloqueo] = useState('Trato inadecuado o irrespetuoso');
-  const [detalleBloqueo, setDetalleBloqueo] = useState('');
+  const [motivoBloqueo, setMotivoBloqueo] = useState(
+    "Trato inadecuado o irrespetuoso",
+  );
+  const [detalleBloqueo, setDetalleBloqueo] = useState("");
   const [isBloqueando, setIsBloqueando] = useState(false);
 
   const [modalDenunciaAbierto, setModalDenunciaAbierto] = useState(false);
-  const [tipoMotivoDenuncia, setTipoMotivoDenuncia] = useState('PAGO_FUERA_PLATAFORMA');
-  const [detalleDenuncia, setDetalleDenuncia] = useState('');
+  const [tipoMotivoDenuncia, setTipoMotivoDenuncia] = useState(
+    "PAGO_FUERA_PLATAFORMA",
+  );
+  const [detalleDenuncia, setDetalleDenuncia] = useState("");
   const [denunciaBloquearTambien, setDenunciaBloquearTambien] = useState(true);
   const [isDenunciando, setIsDenunciando] = useState(false);
 
-  const [feedbackMensaje, setFeedbackMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
+  const [feedbackMensaje, setFeedbackMensaje] = useState<{
+    tipo: "success" | "error";
+    texto: string;
+  } | null>(null);
 
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -152,9 +162,9 @@ export const ActiveConversation: React.FC<Props> = ({
       }
     };
     if (menuSeguridadAbierto) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuSeguridadAbierto]);
 
   const handleConfirmarBloqueo = async () => {
@@ -165,35 +175,40 @@ export const ActiveConversation: React.FC<Props> = ({
         ? `${motivoBloqueo}: ${detalleBloqueo.trim()}`
         : motivoBloqueo;
 
-      const res = await fetch(`http://localhost:3000/api/chat/${chat.id}/bloquear`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      const res = await fetch(
+        `https://expertoya-backend.onrender.com/api/chat/${chat.id}/bloquear`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            motivo: motivoCompleto,
+            denunciar: false,
+          }),
         },
-        body: JSON.stringify({
-          motivo: motivoCompleto,
-          denunciar: false,
-        }),
-      });
+      );
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Error al bloquear usuario');
+        throw new Error(data.error || "Error al bloquear usuario");
       }
 
       setModalBloqueoAbierto(false);
-      setDetalleBloqueo('');
+      setDetalleBloqueo("");
       setFeedbackMensaje({
-        tipo: 'success',
-        texto: 'Usuario bloqueado exitosamente. La comunicación ha sido deshabilitada.',
+        tipo: "success",
+        texto:
+          "Usuario bloqueado exitosamente. La comunicación ha sido deshabilitada.",
       });
       recargarHistorial();
     } catch (err: unknown) {
-      console.error('Error al bloquear:', err);
-      const msg = err instanceof Error ? err.message : 'Error al procesar el bloqueo';
+      console.error("Error al bloquear:", err);
+      const msg =
+        err instanceof Error ? err.message : "Error al procesar el bloqueo";
       setFeedbackMensaje({
-        tipo: 'error',
+        tipo: "error",
         texto: msg,
       });
     } finally {
@@ -203,52 +218,56 @@ export const ActiveConversation: React.FC<Props> = ({
 
   const handleConfirmarDenuncia = async () => {
     if (!detalleDenuncia.trim()) {
-      alert('Por favor redacta un detalle o descargo para tu denuncia.');
+      alert("Por favor redacta un detalle o descargo para tu denuncia.");
       return;
     }
     setIsDenunciando(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/reportes/crear`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      const res = await fetch(
+        `https://expertoya-backend.onrender.com/api/reportes/crear`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            denunciado_id: otherPerson.id,
+            solicitud_id: chat.id,
+            tipo_motivo: tipoMotivoDenuncia,
+            descripcion: detalleDenuncia.trim(),
+            bloquear: denunciaBloquearTambien,
+          }),
         },
-        body: JSON.stringify({
-          denunciado_id: otherPerson.id,
-          solicitud_id: chat.id,
-          tipo_motivo: tipoMotivoDenuncia,
-          descripcion: detalleDenuncia.trim(),
-          bloquear: denunciaBloquearTambien,
-        }),
-      });
+      );
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Error al registrar denuncia');
+        throw new Error(data.error || "Error al registrar denuncia");
       }
 
       setModalDenunciaAbierto(false);
-      setDetalleDenuncia('');
+      setDetalleDenuncia("");
       setFeedbackMensaje({
-        tipo: 'success',
-        texto: 'Tu denuncia ha sido radicada exitosamente y está siendo auditada por el Administrador.',
+        tipo: "success",
+        texto:
+          "Tu denuncia ha sido radicada exitosamente y está siendo auditada por el Administrador.",
       });
       if (denunciaBloquearTambien) {
         recargarHistorial();
       }
     } catch (err: unknown) {
-      console.error('Error al denunciar:', err);
-      const msg = err instanceof Error ? err.message : 'Error al procesar la denuncia';
+      console.error("Error al denunciar:", err);
+      const msg =
+        err instanceof Error ? err.message : "Error al procesar la denuncia";
       setFeedbackMensaje({
-        tipo: 'error',
+        tipo: "error",
         texto: msg,
       });
     } finally {
       setIsDenunciando(false);
     }
   };
-
 
   useEffect(() => {
     if (!llamadaEntrante) return;
@@ -257,20 +276,23 @@ export const ActiveConversation: React.FC<Props> = ({
     let intervalId: ReturnType<typeof setInterval> | null = null;
 
     try {
-      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext;
       if (AudioContextClass) {
         audioCtx = new AudioContextClass();
 
         const playTone = () => {
-          if (!audioCtx || audioCtx.state === 'closed') return;
-          if (audioCtx.state === 'suspended') {
+          if (!audioCtx || audioCtx.state === "closed") return;
+          if (audioCtx.state === "suspended") {
             audioCtx.resume();
           }
           const now = audioCtx.currentTime;
 
           const osc1 = audioCtx.createOscillator();
           const gain1 = audioCtx.createGain();
-          osc1.type = 'sine';
+          osc1.type = "sine";
           osc1.frequency.setValueAtTime(440, now);
           gain1.gain.setValueAtTime(0.15, now);
           gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
@@ -281,7 +303,7 @@ export const ActiveConversation: React.FC<Props> = ({
 
           const osc2 = audioCtx.createOscillator();
           const gain2 = audioCtx.createGain();
-          osc2.type = 'sine';
+          osc2.type = "sine";
           osc2.frequency.setValueAtTime(880, now + 0.15);
           gain2.gain.setValueAtTime(0.15, now + 0.15);
           gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
@@ -295,13 +317,13 @@ export const ActiveConversation: React.FC<Props> = ({
         intervalId = setInterval(playTone, 2000);
       }
     } catch (e) {
-      console.warn('AudioContext no inicializado:', e);
+      console.warn("AudioContext no inicializado:", e);
     }
 
     return () => {
       if (intervalId) clearInterval(intervalId);
-      if (audioCtx && audioCtx.state !== 'closed') {
-        audioCtx.close().catch(() => { });
+      if (audioCtx && audioCtx.state !== "closed") {
+        audioCtx.close().catch(() => {});
       }
     };
   }, [llamadaEntrante]);
@@ -314,16 +336,19 @@ export const ActiveConversation: React.FC<Props> = ({
     materiales: string;
     nota: string;
   }>(() => ({
-    fecha: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-    hora: '14:00 a 16:00 hs',
-    presupuesto: chat.escrowAmount || '',
-    materiales: '',
-    nota: '',
+    fecha: new Date(Date.now() + 86400000).toISOString().split("T")[0],
+    hora: "14:00 a 16:00 hs",
+    presupuesto: chat.escrowAmount || "",
+    materiales: "",
+    nota: "",
   }));
 
   const [mostrarModalSeguridad, setMostrarModalSeguridad] = useState(false);
-  const [mostrarConfirmacionEnvioRiesgo, setMostrarConfirmacionEnvioRiesgo] = useState(false);
-  const [mensajePendienteRiesgo, setMensajePendienteRiesgo] = useState<string | null>(null);
+  const [mostrarConfirmacionEnvioRiesgo, setMostrarConfirmacionEnvioRiesgo] =
+    useState(false);
+  const [mensajePendienteRiesgo, setMensajePendienteRiesgo] = useState<
+    string | null
+  >(null);
 
   const [grabandoAudio, setGrabandoAudio] = useState(false);
   const [segundosGrabacion, setSegundosGrabacion] = useState(0);
@@ -334,7 +359,10 @@ export const ActiveConversation: React.FC<Props> = ({
   useEffect(() => {
     return () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state !== "inactive"
+      ) {
         mediaRecorderRef.current.stream.getTracks().forEach((t) => t.stop());
       }
     };
@@ -343,7 +371,7 @@ export const ActiveConversation: React.FC<Props> = ({
   const iniciarGrabacion = async () => {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert('Tu navegador no soporta grabación de audio.');
+        alert("Tu navegador no soporta grabación de audio.");
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -364,21 +392,27 @@ export const ActiveConversation: React.FC<Props> = ({
         setSegundosGrabacion((prev) => prev + 1);
       }, 1000);
     } catch (err: unknown) {
-      console.error('Error al acceder al micrófono:', err);
-      alert('No se pudo acceder al micrófono. Por favor permite el acceso en el navegador.');
+      console.error("Error al acceder al micrófono:", err);
+      alert(
+        "No se pudo acceder al micrófono. Por favor permite el acceso en el navegador.",
+      );
     }
   };
 
   const detenerYEnviarAudio = () => {
-    if (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive') return;
+    if (
+      !mediaRecorderRef.current ||
+      mediaRecorderRef.current.state === "inactive"
+    )
+      return;
     const recorder = mediaRecorderRef.current;
 
     recorder.onstop = () => {
-      const mimeType = recorder.mimeType || 'audio/webm';
+      const mimeType = recorder.mimeType || "audio/webm";
       const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
       const durationLabel = `🎤 Mensaje de voz (${Math.floor(segundosGrabacion / 60)}:${String(
-        segundosGrabacion % 60
-      ).padStart(2, '0')})`;
+        segundosGrabacion % 60,
+      ).padStart(2, "0")})`;
       subirArchivo(audioBlob, durationLabel);
 
       recorder.stream.getTracks().forEach((track) => track.stop());
@@ -399,7 +433,9 @@ export const ActiveConversation: React.FC<Props> = ({
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.onstop = null;
       mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+      mediaRecorderRef.current.stream
+        .getTracks()
+        .forEach((track) => track.stop());
       mediaRecorderRef.current = null;
     }
     if (timerIntervalRef.current) {
@@ -414,29 +450,29 @@ export const ActiveConversation: React.FC<Props> = ({
   const formatDuration = (secs: number) => {
     const m = Math.floor(secs / 60);
     const s = secs % 60;
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
+    return `${m}:${s < 10 ? "0" : ""}${s}`;
   };
 
   const isUserTheProfessional =
     (user?.id && chat.professional?.id && user.id === chat.professional.id) ||
     (user?.id && chat.client?.id && user.id !== chat.client.id) ||
-    activeRole === 'PROFESIONAL';
+    activeRole === "PROFESIONAL";
 
   const otherPerson = isUserTheProfessional ? chat.client : chat.professional;
 
   const estaBloqueado =
     bloqueado ||
-    estadoSolicitud === 'FINALIZADO' ||
-    estadoSolicitud === 'DISPUTA' ||
-    estadoSolicitud === 'BLOQUEADO' ||
-    chat.status === 'COMPLETADO';
+    estadoSolicitud === "FINALIZADO" ||
+    estadoSolicitud === "DISPUTA" ||
+    estadoSolicitud === "BLOQUEADO" ||
+    chat.status === "COMPLETADO";
 
   const avatarUri =
-    otherPerson.avatar && otherPerson.avatar.trim() !== ''
+    otherPerson.avatar && otherPerson.avatar.trim() !== ""
       ? otherPerson.avatar
       : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        otherPerson.name || 'Usuario'
-      )}&background=283593&color=fff`;
+          otherPerson.name || "Usuario",
+        )}&background=283593&color=fff`;
 
   const [variacion, setVariacion] = useState(0);
 
@@ -444,22 +480,29 @@ export const ActiveConversation: React.FC<Props> = ({
     if (!chat.id || estaBloqueado) return;
     let cancel = false;
 
-    fetch(`http://localhost:3000/api/chat/${chat.id}/sugerencias-ia?variacion=${variacion}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    fetch(
+      `https://expertoya-backend.onrender.com/api/chat/${chat.id}/sugerencias-ia?variacion=${variacion}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       },
-    })
+    )
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!cancel && Array.isArray(data?.sugerencias) && data.sugerencias.length > 0) {
+        if (
+          !cancel &&
+          Array.isArray(data?.sugerencias) &&
+          data.sugerencias.length > 0
+        ) {
           setSugerencias(data.sugerencias);
           setCargandoSugerencias(false);
         }
       })
       .catch((err) => {
         if (!cancel) {
-          console.warn('Error al obtener sugerencias IA:', err);
+          console.warn("Error al obtener sugerencias IA:", err);
           setCargandoSugerencias(false);
         }
       });
@@ -482,7 +525,7 @@ export const ActiveConversation: React.FC<Props> = ({
   const handleEnviarPropuesta = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formPropuesta.fecha || !formPropuesta.hora) {
-      alert('Por favor indica al menos la fecha y el horario estimado.');
+      alert("Por favor indica al menos la fecha y el horario estimado.");
       return;
     }
     const payload = formatPropuestaVisita({
@@ -491,39 +534,50 @@ export const ActiveConversation: React.FC<Props> = ({
       presupuesto: formPropuesta.presupuesto.trim() || undefined,
       materiales: formPropuesta.materiales.trim() || undefined,
       nota: formPropuesta.nota.trim() || undefined,
-      estado: 'PENDIENTE',
+      estado: "PENDIENTE",
     });
     enviarMensaje(payload);
     setMostrarModalPropuesta(false);
     setFormPropuesta({
-      fecha: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-      hora: '14:00 a 16:00 hs',
-      presupuesto: chat.escrowAmount || '',
-      materiales: '',
-      nota: '',
+      fecha: new Date(Date.now() + 86400000).toISOString().split("T")[0],
+      hora: "14:00 a 16:00 hs",
+      presupuesto: chat.escrowAmount || "",
+      materiales: "",
+      nota: "",
     });
   };
 
-  const [visitaConfirmadaModal, setVisitaConfirmadaModal] = useState<PropuestaVisitaData | null>(null);
+  const [visitaConfirmadaModal, setVisitaConfirmadaModal] =
+    useState<PropuestaVisitaData | null>(null);
 
-  const handleConfirmarVisita = async (mensajeId: string, propuesta: PropuestaVisitaData) => {
-    const confirmText = `✅ ¡Visita técnica confirmada! Acordamos para el ${propuesta.fecha} (${propuesta.hora}). Presupuesto: ${propuesta.presupuesto || 'A convenir'}.`;
-    await responderPropuesta(mensajeId, 'ACEPTADA', confirmText);
+  const handleConfirmarVisita = async (
+    mensajeId: string,
+    propuesta: PropuestaVisitaData,
+  ) => {
+    const confirmText = `✅ ¡Visita técnica confirmada! Acordamos para el ${propuesta.fecha} (${propuesta.hora}). Presupuesto: ${propuesta.presupuesto || "A convenir"}.`;
+    await responderPropuesta(mensajeId, "ACEPTADA", confirmText);
     setVisitaConfirmadaModal(propuesta);
   };
 
   const handleAgregarGoogleCalendar = (propuesta: PropuestaVisitaData) => {
-    const url = buildGoogleCalendarUrl(propuesta, otherPerson.name, otherPerson.profession);
-    window.open(url, '_blank', 'noopener,noreferrer');
+    const url = buildGoogleCalendarUrl(
+      propuesta,
+      otherPerson.name,
+      otherPerson.profession,
+    );
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
-  const handlePedirReprogramacion = async (mensajeId: string, propuesta: PropuestaVisitaData) => {
+  const handlePedirReprogramacion = async (
+    mensajeId: string,
+    propuesta: PropuestaVisitaData,
+  ) => {
     const reprogramText = `🔄 Hola, he visto la propuesta para el ${propuesta.fecha} (${propuesta.hora}), pero necesitaría coordinar otro horario si es posible.`;
-    await responderPropuesta(mensajeId, 'REPROGRAMAR', reprogramText);
+    await responderPropuesta(mensajeId, "REPROGRAMAR", reprogramText);
   };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensajes, otroUsuarioEscribiendo]);
 
   const handleSend = (e?: React.FormEvent) => {
@@ -543,7 +597,7 @@ export const ActiveConversation: React.FC<Props> = ({
   const enviarMensajeConfirmado = (texto: string) => {
     notificarDetuvoEscribiendo();
     enviarMensaje(texto);
-    setInputText('');
+    setInputText("");
     setMensajePendienteRiesgo(null);
     setMostrarConfirmacionEnvioRiesgo(false);
   };
@@ -553,20 +607,20 @@ export const ActiveConversation: React.FC<Props> = ({
     if (file) {
       subirArchivo(file);
     }
-    e.target.value = '';
+    e.target.value = "";
   };
 
   const renderStatusTicks = (status?: string, leido?: boolean) => {
-    if (leido || status === 'LEIDO') {
+    if (leido || status === "LEIDO") {
       return <CheckCheck className="w-3.5 h-3.5 text-white" />;
     }
-    if (status === 'ENTREGADO') {
+    if (status === "ENTREGADO") {
       return <CheckCheck className="w-3.5 h-3.5 text-yellow-200" />;
     }
-    if (status === 'ENVIADO') {
+    if (status === "ENVIADO") {
       return <Check className="w-3.5 h-3.5 text-yellow-200" />;
     }
-    if (status === 'ENVIANDO') {
+    if (status === "ENVIANDO") {
       return <Clock className="w-3 h-3 text-gray-200 animate-spin" />;
     }
     return <CheckCheck className="w-3.5 h-3.5 text-white" />;
@@ -574,23 +628,25 @@ export const ActiveConversation: React.FC<Props> = ({
 
   const hasEscrow = Boolean(
     chat.escrowAmount &&
-    chat.escrowAmount !== '$0' &&
-    chat.escrowAmount !== '0' &&
-    chat.escrowAmount !== '$0.00'
+    chat.escrowAmount !== "$0" &&
+    chat.escrowAmount !== "0" &&
+    chat.escrowAmount !== "$0.00",
   );
 
   return (
     <div
-      className={`flex flex-col h-[750px] max-h-[85vh] w-full rounded-2xl sm:rounded-3xl border overflow-hidden shadow-lg transition-colors ${isDark
-        ? 'bg-[#121826] border-gray-800'
-        : 'bg-[#FDFCF4] border-gray-200/80'
-        }`}
+      className={`flex flex-col h-[750px] max-h-[85vh] w-full rounded-2xl sm:rounded-3xl border overflow-hidden shadow-lg transition-colors ${
+        isDark
+          ? "bg-[#121826] border-gray-800"
+          : "bg-[#FDFCF4] border-gray-200/80"
+      }`}
     >
       <header
-        className={`flex items-center justify-between px-4 sm:px-6 py-3.5 border-b shrink-0 ${isDark
-          ? 'bg-[#1F2937] border-gray-800 text-[#FDFCF4]'
-          : 'bg-white border-gray-100 text-[#283593]'
-          }`}
+        className={`flex items-center justify-between px-4 sm:px-6 py-3.5 border-b shrink-0 ${
+          isDark
+            ? "bg-[#1F2937] border-gray-800 text-[#FDFCF4]"
+            : "bg-white border-gray-100 text-[#283593]"
+        }`}
       >
         <div className="flex items-center gap-3 min-w-0">
           {onBack && (
@@ -617,8 +673,9 @@ export const ActiveConversation: React.FC<Props> = ({
 
           <div className="min-w-0">
             <h2
-              className={`font-bold text-base sm:text-lg leading-tight truncate ${isDark ? 'text-[#FDFCF4]' : 'text-[#283593]'
-                }`}
+              className={`font-bold text-base sm:text-lg leading-tight truncate ${
+                isDark ? "text-[#FDFCF4]" : "text-[#283593]"
+              }`}
             >
               {otherPerson.name}
             </h2>
@@ -629,8 +686,9 @@ export const ActiveConversation: React.FC<Props> = ({
               </p>
             ) : (
               <p
-                className={`text-xs font-medium truncate ${isDark ? 'text-gray-400' : 'text-[#64748B]'
-                  }`}
+                className={`text-xs font-medium truncate ${
+                  isDark ? "text-gray-400" : "text-[#64748B]"
+                }`}
               >
                 {otherPerson.profession}
               </p>
@@ -643,10 +701,11 @@ export const ActiveConversation: React.FC<Props> = ({
             <button
               onClick={iniciarVideollamada}
               disabled={estaBloqueado}
-              className={`p-2 sm:p-2.5 rounded-full transition-colors cursor-pointer ${estaBloqueado
-                ? 'opacity-40 cursor-not-allowed text-gray-400'
-                : 'text-[#00BFA5] hover:bg-[#00BFA5]/10 active:scale-95'
-                }`}
+              className={`p-2 sm:p-2.5 rounded-full transition-colors cursor-pointer ${
+                estaBloqueado
+                  ? "opacity-40 cursor-not-allowed text-gray-400"
+                  : "text-[#00BFA5] hover:bg-[#00BFA5]/10 active:scale-95"
+              }`}
               aria-label="Iniciar videollamada"
               title="Iniciar videollamada de diagnóstico"
             >
@@ -657,10 +716,11 @@ export const ActiveConversation: React.FC<Props> = ({
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuSeguridadAbierto((prev) => !prev)}
-              className={`p-2 sm:p-2.5 rounded-full transition-colors cursor-pointer ${menuSeguridadAbierto
-                  ? 'bg-gray-100 dark:bg-gray-800 text-[#283593] dark:text-[#FDFCF4]'
-                  : 'text-gray-500 hover:text-[#283593] dark:hover:text-[#FDFCF4] hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
+              className={`p-2 sm:p-2.5 rounded-full transition-colors cursor-pointer ${
+                menuSeguridadAbierto
+                  ? "bg-gray-100 dark:bg-gray-800 text-[#283593] dark:text-[#FDFCF4]"
+                  : "text-gray-500 hover:text-[#283593] dark:hover:text-[#FDFCF4] hover:bg-gray-100 dark:hover:bg-gray-800"
+              }`}
               aria-label="Opciones de seguridad y reporte"
               title="Opciones de seguridad"
             >
@@ -669,10 +729,11 @@ export const ActiveConversation: React.FC<Props> = ({
 
             {menuSeguridadAbierto && (
               <div
-                className={`absolute right-0 mt-2 w-56 rounded-2xl shadow-2xl border py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 ${isDark
-                    ? 'bg-[#1F2937] border-gray-700 text-[#FDFCF4]'
-                    : 'bg-white border-gray-100 text-gray-800'
-                  }`}
+                className={`absolute right-0 mt-2 w-56 rounded-2xl shadow-2xl border py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 ${
+                  isDark
+                    ? "bg-[#1F2937] border-gray-700 text-[#FDFCF4]"
+                    : "bg-white border-gray-100 text-gray-800"
+                }`}
               >
                 <button
                   type="button"
@@ -707,13 +768,14 @@ export const ActiveConversation: React.FC<Props> = ({
 
       {feedbackMensaje && (
         <div
-          className={`px-4 py-2 text-xs font-semibold flex items-center justify-between transition-all ${feedbackMensaje.tipo === 'success'
-              ? 'bg-emerald-500/15 border-b border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-              : 'bg-red-500/15 border-b border-red-500/30 text-red-600 dark:text-red-400'
-            }`}
+          className={`px-4 py-2 text-xs font-semibold flex items-center justify-between transition-all ${
+            feedbackMensaje.tipo === "success"
+              ? "bg-emerald-500/15 border-b border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+              : "bg-red-500/15 border-b border-red-500/30 text-red-600 dark:text-red-400"
+          }`}
         >
           <div className="flex items-center gap-2">
-            {feedbackMensaje.tipo === 'success' ? (
+            {feedbackMensaje.tipo === "success" ? (
               <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
             ) : (
               <AlertTriangle className="w-4 h-4 text-[#EF4444] shrink-0" />
@@ -734,10 +796,10 @@ export const ActiveConversation: React.FC<Props> = ({
           <div className="flex items-center gap-2 min-w-0">
             <Ban className="w-4 h-4 shrink-0 text-[#EF4444]" />
             <span>
-              {estadoSolicitud === 'BLOQUEADO' || bloqueado
+              {estadoSolicitud === "BLOQUEADO" || bloqueado
                 ? bloqueoInfo?.es_bloqueador
-                  ? 'Has bloqueado a este usuario. La comunicación y videollamadas han sido deshabilitadas.'
-                  : 'Esta conversación ha sido bloqueada. La comunicación y videollamadas han sido deshabilitadas.'
+                  ? "Has bloqueado a este usuario. La comunicación y videollamadas han sido deshabilitadas."
+                  : "Esta conversación ha sido bloqueada. La comunicación y videollamadas han sido deshabilitadas."
                 : `Chat cerrado. La solicitud se encuentra en estado ${estadoSolicitud || chat.status}.`}
             </span>
           </div>
@@ -751,27 +813,28 @@ export const ActiveConversation: React.FC<Props> = ({
       )}
 
       <div
-        className={`flex items-center justify-between px-4 sm:px-6 py-2 border-b text-xs sm:text-sm font-semibold shrink-0 transition-colors ${chat.escrowStatus === 'RELEASED'
-          ? isDark
-            ? 'bg-emerald-950/40 border-emerald-800 text-emerald-400'
-            : 'bg-emerald-50 border-emerald-100 text-emerald-700'
-          : hasEscrow
+        className={`flex items-center justify-between px-4 sm:px-6 py-2 border-b text-xs sm:text-sm font-semibold shrink-0 transition-colors ${
+          chat.escrowStatus === "RELEASED"
             ? isDark
-              ? 'bg-[#00BFA5]/10 border-[#00BFA5]/20 text-[#33EFA5]'
-              : 'bg-[#E8F8F5] border-[#B2DFDB] text-[#00897B]'
-            : isDark
-              ? 'bg-[#1e293b]/60 border-gray-800 text-slate-300'
-              : 'bg-[#F0FDF4] border-emerald-100 text-[#065F46]'
-          }`}
+              ? "bg-emerald-950/40 border-emerald-800 text-emerald-400"
+              : "bg-emerald-50 border-emerald-100 text-emerald-700"
+            : hasEscrow
+              ? isDark
+                ? "bg-[#00BFA5]/10 border-[#00BFA5]/20 text-[#33EFA5]"
+                : "bg-[#E8F8F5] border-[#B2DFDB] text-[#00897B]"
+              : isDark
+                ? "bg-[#1e293b]/60 border-gray-800 text-slate-300"
+                : "bg-[#F0FDF4] border-emerald-100 text-[#065F46]"
+        }`}
       >
         <div className="flex items-center gap-2 min-w-0">
           <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-emerald-500" />
           <span className="truncate">
-            {chat.escrowStatus === 'RELEASED'
+            {chat.escrowStatus === "RELEASED"
               ? `Fondos liberados con éxito (${chat.escrowAmount}).`
               : hasEscrow
                 ? `Fondos en custodia garantizada (${chat.escrowAmount}).`
-                : 'Conversación protegida por el sistema de Garantía Escrow ExpertoYa.'}
+                : "Conversación protegida por el sistema de Garantía Escrow ExpertoYa."}
           </span>
         </div>
 
@@ -787,71 +850,103 @@ export const ActiveConversation: React.FC<Props> = ({
             <span className="sm:hidden">Seguridad</span>
           </button>
 
-          {activeRole === 'CLIENTE' && hasEscrow && chat.escrowStatus !== 'RELEASED' && onReleaseFunds && (
-            <button
-              onClick={() => {
-                if (confirm(`¿Deseas confirmar la liberación de ${chat.escrowAmount} a ${otherPerson.name}?`)) {
-                  onReleaseFunds(chat.id);
-                }
-              }}
-              className="ml-2 px-3 py-1 bg-[#10B981] hover:bg-[#059669] text-white text-xs font-bold rounded-lg shadow-sm transition-all cursor-pointer"
-            >
-              Liberar Fondos
-            </button>
-          )}
+          {activeRole === "CLIENTE" &&
+            hasEscrow &&
+            chat.escrowStatus !== "RELEASED" &&
+            onReleaseFunds && (
+              <button
+                onClick={() => {
+                  if (
+                    confirm(
+                      `¿Deseas confirmar la liberación de ${chat.escrowAmount} a ${otherPerson.name}?`,
+                    )
+                  ) {
+                    onReleaseFunds(chat.id);
+                  }
+                }}
+                className="ml-2 px-3 py-1 bg-[#10B981] hover:bg-[#059669] text-white text-xs font-bold rounded-lg shadow-sm transition-all cursor-pointer"
+              >
+                Liberar Fondos
+              </button>
+            )}
         </div>
       </div>
 
       <div
-        className={`flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 ${isDark ? 'bg-[#121826]' : 'bg-[#FAF9F5]'
-          }`}
+        className={`flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 ${
+          isDark ? "bg-[#121826]" : "bg-[#FAF9F5]"
+        }`}
       >
         {cargando ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
             <Loader2 className="w-6 h-6 animate-spin text-[#FF8C00]" />
-            <span className="text-xs font-medium">Sincronizando mensajes...</span>
+            <span className="text-xs font-medium">
+              Sincronizando mensajes...
+            </span>
           </div>
         ) : mensajes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-500">
             <div className="w-14 h-14 rounded-full bg-[#FF8C00]/15 flex items-center justify-center text-[#FF8C00] mb-3">
               <MessageSquare className="w-7 h-7" />
             </div>
-            <h4 className={`text-base font-bold ${isDark ? 'text-white' : 'text-[#283593]'}`}>
+            <h4
+              className={`text-base font-bold ${isDark ? "text-white" : "text-[#283593]"}`}
+            >
               Comienza la conversación
             </h4>
             <p className="text-xs text-gray-400 mt-1 max-w-xs">
-              {activeRole === 'CLIENTE'
+              {activeRole === "CLIENTE"
                 ? `Escribe tu mensaje a ${otherPerson.name} para coordinar los detalles del servicio.`
                 : `Inicia la coordinación con ${otherPerson.name}.`}
             </p>
           </div>
         ) : (
           mensajes.map((msg) => {
-            const isCallLog = typeof msg.contenido === 'string' && msg.contenido.startsWith('📞 Videollamada');
+            const isCallLog =
+              typeof msg.contenido === "string" &&
+              msg.contenido.startsWith("📞 Videollamada");
             if (isCallLog) {
-              const isFinalizada = msg.contenido.includes('finalizada');
+              const isFinalizada = msg.contenido.includes("finalizada");
               const timeStr = new Date(msg.enviado_en).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
+                hour: "2-digit",
+                minute: "2-digit",
               });
               return (
                 <div key={msg.id} className="flex justify-center my-3 w-full">
-                  <div className={`flex items-center space-x-3 px-4 py-2 rounded-2xl border text-xs shadow-sm max-w-sm ${isFinalizada
-                    ? 'bg-teal-50 dark:bg-teal-950/40 border-[#00BFA5]/30 text-teal-950 dark:text-teal-200'
-                    : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200'
-                    }`}>
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white ${isFinalizada ? 'bg-[#00BFA5]' : 'bg-[#FF8C00]'
-                      }`}>
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  <div
+                    className={`flex items-center space-x-3 px-4 py-2 rounded-2xl border text-xs shadow-sm max-w-sm ${
+                      isFinalizada
+                        ? "bg-teal-50 dark:bg-teal-950/40 border-[#00BFA5]/30 text-teal-950 dark:text-teal-200"
+                        : "bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200"
+                    }`}
+                  >
+                    <div
+                      className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white ${
+                        isFinalizada ? "bg-[#00BFA5]" : "bg-[#FF8C00]"
+                      }`}
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        />
                       </svg>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-[11px] leading-tight">
-                        {isFinalizada ? 'Videollamada de Diagnóstico' : 'Videollamada'}
+                        {isFinalizada
+                          ? "Videollamada de Diagnóstico"
+                          : "Videollamada"}
                       </p>
                       <p className="text-[10px] opacity-75 truncate">
-                        {msg.contenido.replace('📞 Videollamada ', '')}
+                        {msg.contenido.replace("📞 Videollamada ", "")}
                       </p>
                       {isFinalizada && isUserTheProfessional && (
                         <button
@@ -859,29 +954,42 @@ export const ActiveConversation: React.FC<Props> = ({
                           onClick={() => setMostrarModalPropuesta(true)}
                           className="mt-1.5 inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-[#FF8C00] hover:bg-[#FF8C00]/90 text-white font-bold text-[10px] shadow-sm transition-transform active:scale-95 cursor-pointer"
                         >
-                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          <svg
+                            className="w-3 h-3"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
                           </svg>
                           <span>Coordinar Visita Técnica</span>
                         </button>
                       )}
                     </div>
-                    <span className="text-[10px] opacity-60 ml-1 shrink-0">{timeStr}</span>
+                    <span className="text-[10px] opacity-60 ml-1 shrink-0">
+                      {timeStr}
+                    </span>
                   </div>
                 </div>
               );
             }
             const isCurrentUser = msg.remitente_id === currentUserId;
             const timeStr = new Date(msg.enviado_en).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
+              hour: "2-digit",
+              minute: "2-digit",
             });
 
             return (
               <div
                 key={msg.id}
-                className={`flex items-end gap-2.5 ${isCurrentUser ? 'justify-end' : 'justify-start'
-                  }`}
+                className={`flex items-end gap-2.5 ${
+                  isCurrentUser ? "justify-end" : "justify-start"
+                }`}
               >
                 {!isCurrentUser && (
                   <img
@@ -897,10 +1005,11 @@ export const ActiveConversation: React.FC<Props> = ({
                     if (!propuesta) return null;
                     return (
                       <div
-                        className={`w-full max-w-md sm:max-w-lg p-4 sm:p-5 rounded-2xl shadow-md border space-y-3 transition-all ${isDark
-                          ? 'bg-[#1E293B] border-amber-500/40 text-white'
-                          : 'bg-white border-amber-300 text-gray-800'
-                          }`}
+                        className={`w-full max-w-md sm:max-w-lg p-4 sm:p-5 rounded-2xl shadow-md border space-y-3 transition-all ${
+                          isDark
+                            ? "bg-[#1E293B] border-amber-500/40 text-white"
+                            : "bg-white border-amber-300 text-gray-800"
+                        }`}
                       >
                         <div className="flex items-start justify-between gap-3 border-b pb-3 border-amber-200/50 dark:border-gray-700">
                           <div className="flex items-center gap-2.5">
@@ -912,18 +1021,20 @@ export const ActiveConversation: React.FC<Props> = ({
                                 Visita Técnica & Presupuesto
                               </h4>
                               <p className="text-[11px] text-gray-400">
-                                {isCurrentUser ? 'Propuesta enviada por ti' : `Propuesta de ${otherPerson.name}`}
+                                {isCurrentUser
+                                  ? "Propuesta enviada por ti"
+                                  : `Propuesta de ${otherPerson.name}`}
                               </p>
                             </div>
                           </div>
 
                           <div>
-                            {propuesta.estado === 'ACEPTADA' ? (
+                            {propuesta.estado === "ACEPTADA" ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300">
                                 <CheckCircle2 className="w-3.5 h-3.5" />
                                 Confirmada
                               </span>
-                            ) : propuesta.estado === 'REPROGRAMAR' ? (
+                            ) : propuesta.estado === "REPROGRAMAR" ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-300">
                                 <RefreshCw className="w-3.5 h-3.5" />
                                 Reprogramación
@@ -941,25 +1052,35 @@ export const ActiveConversation: React.FC<Props> = ({
                           <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/60">
                             <Calendar className="w-4 h-4 text-[#FF8C00] shrink-0" />
                             <div>
-                              <span className="text-gray-400 block text-[10px]">Fecha</span>
-                              <span className="font-semibold">{propuesta.fecha}</span>
+                              <span className="text-gray-400 block text-[10px]">
+                                Fecha
+                              </span>
+                              <span className="font-semibold">
+                                {propuesta.fecha}
+                              </span>
                             </div>
                           </div>
 
                           <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/60">
                             <Clock className="w-4 h-4 text-[#FF8C00] shrink-0" />
                             <div>
-                              <span className="text-gray-400 block text-[10px]">Horario</span>
-                              <span className="font-semibold">{propuesta.hora}</span>
+                              <span className="text-gray-400 block text-[10px]">
+                                Horario
+                              </span>
+                              <span className="font-semibold">
+                                {propuesta.hora}
+                              </span>
                             </div>
                           </div>
 
                           <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/60">
                             <DollarSign className="w-4 h-4 text-emerald-500 shrink-0" />
                             <div>
-                              <span className="text-gray-400 block text-[10px]">Presupuesto Est.</span>
+                              <span className="text-gray-400 block text-[10px]">
+                                Presupuesto Est.
+                              </span>
                               <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                                {propuesta.presupuesto || 'A convenir'}
+                                {propuesta.presupuesto || "A convenir"}
                               </span>
                             </div>
                           </div>
@@ -967,9 +1088,11 @@ export const ActiveConversation: React.FC<Props> = ({
                           <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/60">
                             <Wrench className="w-4 h-4 text-[#283593] dark:text-indigo-400 shrink-0" />
                             <div className="truncate">
-                              <span className="text-gray-400 block text-[10px]">Materiales / Herram.</span>
+                              <span className="text-gray-400 block text-[10px]">
+                                Materiales / Herram.
+                              </span>
                               <span className="font-semibold truncate block">
-                                {propuesta.materiales || 'Insumos estándar'}
+                                {propuesta.materiales || "Insumos estándar"}
                               </span>
                             </div>
                           </div>
@@ -980,16 +1103,20 @@ export const ActiveConversation: React.FC<Props> = ({
                             <span className="text-amber-800 dark:text-amber-300 font-bold block text-[10px]">
                               Observaciones:
                             </span>
-                            <p className="text-gray-600 dark:text-gray-300 mt-0.5">{propuesta.nota}</p>
+                            <p className="text-gray-600 dark:text-gray-300 mt-0.5">
+                              {propuesta.nota}
+                            </p>
                           </div>
                         )}
 
-                        {propuesta.estado === 'PENDIENTE' ? (
+                        {propuesta.estado === "PENDIENTE" ? (
                           !isCurrentUser ? (
                             <div className="flex items-center gap-2 pt-1">
                               <button
                                 type="button"
-                                onClick={() => handleConfirmarVisita(msg.id, propuesta)}
+                                onClick={() =>
+                                  handleConfirmarVisita(msg.id, propuesta)
+                                }
                                 className="flex-1 py-2 px-3 bg-[#10B981] hover:bg-[#059669] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                               >
                                 <CheckCircle2 className="w-4 h-4" />
@@ -997,7 +1124,9 @@ export const ActiveConversation: React.FC<Props> = ({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handlePedirReprogramacion(msg.id, propuesta)}
+                                onClick={() =>
+                                  handlePedirReprogramacion(msg.id, propuesta)
+                                }
                                 className="py-2 px-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded-xl transition-all cursor-pointer"
                               >
                                 Solicitar Cambio
@@ -1008,15 +1137,19 @@ export const ActiveConversation: React.FC<Props> = ({
                               Esperando respuesta de {otherPerson.name}...
                             </div>
                           )
-                        ) : propuesta.estado === 'ACEPTADA' ? (
+                        ) : propuesta.estado === "ACEPTADA" ? (
                           <div className="space-y-2 pt-0.5">
                             <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-800 dark:text-emerald-300 font-semibold text-center flex items-center justify-center gap-1.5">
                               <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                              <span>Visita técnica confirmada por ambas partes</span>
+                              <span>
+                                Visita técnica confirmada por ambas partes
+                              </span>
                             </div>
                             <button
                               type="button"
-                              onClick={() => handleAgregarGoogleCalendar(propuesta)}
+                              onClick={() =>
+                                handleAgregarGoogleCalendar(propuesta)
+                              }
                               className="w-full py-2 px-3 bg-white dark:bg-gray-800 hover:bg-orange-50/70 dark:hover:bg-orange-950/30 text-[#FF8C00] dark:text-orange-400 border border-orange-200 dark:border-orange-800/60 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer group active:scale-[0.98]"
                             >
                               <Calendar className="w-4 h-4 text-[#FF8C00] group-hover:scale-110 transition-transform" />
@@ -1026,29 +1159,33 @@ export const ActiveConversation: React.FC<Props> = ({
                         ) : (
                           <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-[11px] text-blue-800 dark:text-blue-300 font-semibold text-center flex items-center justify-center gap-1.5">
                             <RefreshCw className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                            <span>Reprogramación solicitada en la conversación</span>
+                            <span>
+                              Reprogramación solicitada en la conversación
+                            </span>
                           </div>
                         )}
 
                         <div className="flex items-center justify-end gap-1.5 text-[10px] text-gray-400 pt-1 border-t border-gray-100 dark:border-gray-800">
                           <span>{timeStr}</span>
-                          {isCurrentUser && renderStatusTicks(msg.status, msg.leido)}
+                          {isCurrentUser &&
+                            renderStatusTicks(msg.status, msg.leido)}
                         </div>
                       </div>
                     );
                   })()
                 ) : (
                   <div
-                    className={`max-w-[85%] sm:max-w-md p-3.5 rounded-2xl shadow-sm space-y-1.5 ${isCurrentUser
-                      ? 'bg-[#FF8C00] text-white rounded-br-xs'
-                      : isDark
-                        ? 'bg-[#1F2937] text-[#FDFCF4] border border-gray-800 rounded-bl-xs'
-                        : 'bg-white text-[#283593] border border-gray-100 rounded-bl-xs'
-                      }`}
+                    className={`max-w-[85%] sm:max-w-md p-3.5 rounded-2xl shadow-sm space-y-1.5 ${
+                      isCurrentUser
+                        ? "bg-[#FF8C00] text-white rounded-br-xs"
+                        : isDark
+                          ? "bg-[#1F2937] text-[#FDFCF4] border border-gray-800 rounded-bl-xs"
+                          : "bg-white text-[#283593] border border-gray-100 rounded-bl-xs"
+                    }`}
                   >
                     {isAudioAttachment(msg.adjunto_url, msg.contenido) ? (
                       <VoiceNotePlayer
-                        audioUrl={msg.adjunto_url || ''}
+                        audioUrl={msg.adjunto_url || ""}
                         isCurrentUser={isCurrentUser}
                         isDark={isDark}
                       />
@@ -1075,48 +1212,58 @@ export const ActiveConversation: React.FC<Props> = ({
                       )
                     )}
 
-                    {msg.contenido && !isAudioAttachment(msg.adjunto_url, msg.contenido) && (
-                      <div>
-                        <p className="text-sm font-medium leading-relaxed break-words whitespace-pre-wrap">
-                          {msg.contenido}
-                        </p>
-                        {(() => {
-                          const riesgo = analizarSeguridadMensaje(msg.contenido);
-                          if (riesgo.esRiesgoso) {
-                            return (
-                              <div
-                                className={`mt-2 p-2 rounded-lg text-[11px] leading-snug flex items-start gap-1.5 border shadow-2xs ${isCurrentUser
-                                  ? 'bg-amber-500/25 border-amber-300/40 text-white'
-                                  : isDark
-                                    ? 'bg-amber-950/40 border-amber-500/30 text-amber-200'
-                                    : 'bg-amber-50 border-amber-200 text-amber-800'
-                                  }`}
-                              >
-                                <ShieldAlert className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-400" />
-                                <div>
-                                  <span className="font-bold block">Aviso de seguridad:</span>
-                                  <span>
-                                    {riesgo.mensaje} Recuerda mantener pagos y acuerdos dentro de ExpertoYa para conservar la Garantía Escrow.
-                                  </span>
-                                </div>
-                              </div>
+                    {msg.contenido &&
+                      !isAudioAttachment(msg.adjunto_url, msg.contenido) && (
+                        <div>
+                          <p className="text-sm font-medium leading-relaxed break-words whitespace-pre-wrap">
+                            {msg.contenido}
+                          </p>
+                          {(() => {
+                            const riesgo = analizarSeguridadMensaje(
+                              msg.contenido,
                             );
-                          }
-                          return null;
-                        })()}
-                      </div>
-                    )}
+                            if (riesgo.esRiesgoso) {
+                              return (
+                                <div
+                                  className={`mt-2 p-2 rounded-lg text-[11px] leading-snug flex items-start gap-1.5 border shadow-2xs ${
+                                    isCurrentUser
+                                      ? "bg-amber-500/25 border-amber-300/40 text-white"
+                                      : isDark
+                                        ? "bg-amber-950/40 border-amber-500/30 text-amber-200"
+                                        : "bg-amber-50 border-amber-200 text-amber-800"
+                                  }`}
+                                >
+                                  <ShieldAlert className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-400" />
+                                  <div>
+                                    <span className="font-bold block">
+                                      Aviso de seguridad:
+                                    </span>
+                                    <span>
+                                      {riesgo.mensaje} Recuerda mantener pagos y
+                                      acuerdos dentro de ExpertoYa para
+                                      conservar la Garantía Escrow.
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      )}
 
                     <div
-                      className={`flex items-center justify-end gap-1.5 text-[10px] font-medium ${isCurrentUser
-                        ? 'text-white/80'
-                        : isDark
-                          ? 'text-gray-400'
-                          : 'text-gray-400'
-                        }`}
+                      className={`flex items-center justify-end gap-1.5 text-[10px] font-medium ${
+                        isCurrentUser
+                          ? "text-white/80"
+                          : isDark
+                            ? "text-gray-400"
+                            : "text-gray-400"
+                      }`}
                     >
                       <span>{timeStr}</span>
-                      {isCurrentUser && renderStatusTicks(msg.status, msg.leido)}
+                      {isCurrentUser &&
+                        renderStatusTicks(msg.status, msg.leido)}
                     </div>
                   </div>
                 )}
@@ -1132,10 +1279,11 @@ export const ActiveConversation: React.FC<Props> = ({
               className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shrink-0 ring-1 ring-black/5"
             />
             <div
-              className={`px-4 py-3 rounded-2xl shadow-sm flex items-center gap-1.5 ${isDark
-                ? 'bg-[#1F2937] border border-gray-800'
-                : 'bg-white border border-gray-100'
-                } rounded-bl-xs`}
+              className={`px-4 py-3 rounded-2xl shadow-sm flex items-center gap-1.5 ${
+                isDark
+                  ? "bg-[#1F2937] border border-gray-800"
+                  : "bg-white border border-gray-100"
+              } rounded-bl-xs`}
             >
               <span className="w-2 h-2 rounded-full bg-[#FF8C00] animate-bounce [animation-delay:-0.3s]" />
               <span className="w-2 h-2 rounded-full bg-[#FF8C00] animate-bounce [animation-delay:-0.15s]" />
@@ -1149,11 +1297,16 @@ export const ActiveConversation: React.FC<Props> = ({
 
       {!estaBloqueado && sugerencias.length > 0 && (
         <div
-          className={`px-3 sm:px-4 py-2 border-t flex items-center gap-2 overflow-x-auto transition-colors ${isDark ? 'bg-[#1A2234] border-gray-800' : 'bg-orange-50/70 border-orange-100'
-            }`}
+          className={`px-3 sm:px-4 py-2 border-t flex items-center gap-2 overflow-x-auto transition-colors ${
+            isDark
+              ? "bg-[#1A2234] border-gray-800"
+              : "bg-orange-50/70 border-orange-100"
+          }`}
         >
           <div className="flex items-center gap-1.5 shrink-0 text-[#FF8C00] font-bold text-xs select-none pr-1">
-            <Sparkles className={`w-3.5 h-3.5 ${cargandoSugerencias ? 'animate-spin' : 'animate-pulse'}`} />
+            <Sparkles
+              className={`w-3.5 h-3.5 ${cargandoSugerencias ? "animate-spin" : "animate-pulse"}`}
+            />
             <span className="hidden sm:inline">IA:</span>
           </div>
 
@@ -1163,10 +1316,11 @@ export const ActiveConversation: React.FC<Props> = ({
                 key={idx}
                 type="button"
                 onClick={() => handleSelectSuggestion(sug)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap active:scale-95 shadow-xs ${isDark
-                  ? 'bg-[#121826] text-gray-200 border-gray-700 hover:border-[#FF8C00] hover:text-[#FF8C00]'
-                  : 'bg-white text-gray-700 border-orange-200 hover:border-[#FF8C00] hover:text-[#FF8C00] hover:bg-orange-50'
-                  }`}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap active:scale-95 shadow-xs ${
+                  isDark
+                    ? "bg-[#121826] text-gray-200 border-gray-700 hover:border-[#FF8C00] hover:text-[#FF8C00]"
+                    : "bg-white text-gray-700 border-orange-200 hover:border-[#FF8C00] hover:text-[#FF8C00] hover:bg-orange-50"
+                }`}
                 title="Hacer clic para editar en el campo de texto"
               >
                 {sug}
@@ -1181,36 +1335,40 @@ export const ActiveConversation: React.FC<Props> = ({
             className="p-1.5 rounded-full text-gray-400 hover:text-[#FF8C00] hover:bg-gray-200/50 dark:hover:bg-gray-800 transition-colors ml-auto shrink-0 cursor-pointer"
             title="Generar nuevas sugerencias de IA"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${cargandoSugerencias ? 'animate-spin text-[#FF8C00]' : ''}`} />
+            <RefreshCw
+              className={`w-3.5 h-3.5 ${cargandoSugerencias ? "animate-spin text-[#FF8C00]" : ""}`}
+            />
           </button>
         </div>
       )}
 
-      {!estaBloqueado && Boolean(inputText.trim()) && (() => {
-        const riesgo = analizarSeguridadMensaje(inputText);
-        if (!riesgo.esRiesgoso) return null;
-        return (
-          <div className="px-3 sm:px-4 py-2 bg-amber-500/15 dark:bg-amber-950/40 border-t border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200 animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <ShieldAlert className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
-            <div className="flex-1">
-              <span className="font-bold text-amber-700 dark:text-amber-300">
-                ⚠️ {riesgo.titulo}
-              </span>
-              <p className="mt-0.5 text-[11px] leading-tight opacity-95">
-                {riesgo.mensaje} {riesgo.consejo}
-              </p>
+      {!estaBloqueado &&
+        Boolean(inputText.trim()) &&
+        (() => {
+          const riesgo = analizarSeguridadMensaje(inputText);
+          if (!riesgo.esRiesgoso) return null;
+          return (
+            <div className="px-3 sm:px-4 py-2 bg-amber-500/15 dark:bg-amber-950/40 border-t border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200 animate-in fade-in slide-in-from-bottom-2 duration-200">
+              <ShieldAlert className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+              <div className="flex-1">
+                <span className="font-bold text-amber-700 dark:text-amber-300">
+                  ⚠️ {riesgo.titulo}
+                </span>
+                <p className="mt-0.5 text-[11px] leading-tight opacity-95">
+                  {riesgo.mensaje} {riesgo.consejo}
+                </p>
+              </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
 
       <form
         onSubmit={handleSend}
-        className={`p-3 sm:p-4 border-t flex items-center gap-2 sm:gap-3 shrink-0 ${estaBloqueado
-          ? 'opacity-50 pointer-events-none'
-          : ''
-          } ${isDark ? 'bg-[#1F2937] border-gray-800' : 'bg-white border-gray-100'
-          }`}
+        className={`p-3 sm:p-4 border-t flex items-center gap-2 sm:gap-3 shrink-0 ${
+          estaBloqueado ? "opacity-50 pointer-events-none" : ""
+        } ${
+          isDark ? "bg-[#1F2937] border-gray-800" : "bg-white border-gray-100"
+        }`}
       >
         <input
           ref={fileInputRef}
@@ -1293,14 +1451,15 @@ export const ActiveConversation: React.FC<Props> = ({
               onBlur={() => notificarDetuvoEscribiendo()}
               placeholder={
                 estaBloqueado
-                  ? 'Chat cerrado para esta solicitud'
-                  : 'Escribe un mensaje...'
+                  ? "Chat cerrado para esta solicitud"
+                  : "Escribe un mensaje..."
               }
               disabled={estaBloqueado}
-              className={`flex-1 py-2 sm:py-2.5 px-4 text-sm rounded-full border outline-none transition-all ${isDark
-                ? 'bg-[#121826] border-gray-700 text-white placeholder-gray-500 focus:border-[#FF8C00]'
-                : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-[#FF8C00] focus:bg-white'
-                }`}
+              className={`flex-1 py-2 sm:py-2.5 px-4 text-sm rounded-full border outline-none transition-all ${
+                isDark
+                  ? "bg-[#121826] border-gray-700 text-white placeholder-gray-500 focus:border-[#FF8C00]"
+                  : "bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-[#FF8C00] focus:bg-white"
+              }`}
             />
 
             {inputText.trim().length > 0 ? (
@@ -1329,7 +1488,7 @@ export const ActiveConversation: React.FC<Props> = ({
       </form>
 
       {selectedImage &&
-        typeof document !== 'undefined' &&
+        typeof document !== "undefined" &&
         createPortal(
           <div
             className="fixed inset-0 z-[99999] flex flex-col items-center justify-between bg-black/92 backdrop-blur-md p-4 sm:p-6 transition-opacity animate-in fade-in duration-200 select-none"
@@ -1357,7 +1516,9 @@ export const ActiveConversation: React.FC<Props> = ({
               </span>
               <button
                 type="button"
-                onClick={() => setZoomLevel((prev) => Math.max(0.5, prev - 0.25))}
+                onClick={() =>
+                  setZoomLevel((prev) => Math.max(0.5, prev - 0.25))
+                }
                 className="p-1.5 hover:bg-white/20 rounded-full transition-colors cursor-pointer text-white"
                 title="Alejar (-)"
               >
@@ -1400,7 +1561,7 @@ export const ActiveConversation: React.FC<Props> = ({
                 alt="Adjunto en pantalla completa"
                 style={{
                   transform: `scale(${zoomLevel})`,
-                  transition: 'transform 0.2s cubic-bezier(0.2, 0, 0, 1)',
+                  transition: "transform 0.2s cubic-bezier(0.2, 0, 0, 1)",
                 }}
                 className="max-h-[75vh] max-w-[85vw] object-contain rounded-xl shadow-2xl cursor-zoom-in"
                 onClick={() => setZoomLevel((prev) => (prev > 1.2 ? 1 : 1.75))}
@@ -1413,7 +1574,8 @@ export const ActiveConversation: React.FC<Props> = ({
               onClick={(e) => e.stopPropagation()}
             >
               <span className="hidden sm:inline">
-                Haz clic en la imagen para alternar zoom, o presiona <strong>Escape</strong> para salir
+                Haz clic en la imagen para alternar zoom, o presiona{" "}
+                <strong>Escape</strong> para salir
               </span>
               <button
                 type="button"
@@ -1425,18 +1587,19 @@ export const ActiveConversation: React.FC<Props> = ({
               </button>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
       {mostrarModalPropuesta &&
-        typeof document !== 'undefined' &&
+        typeof document !== "undefined" &&
         createPortal(
           <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
             <div
-              className={`w-full max-w-lg rounded-2xl shadow-2xl p-6 border space-y-4 ${isDark
-                ? 'bg-[#1E293B] border-gray-700 text-white'
-                : 'bg-white border-gray-200 text-gray-800'
-                }`}
+              className={`w-full max-w-lg rounded-2xl shadow-2xl p-6 border space-y-4 ${
+                isDark
+                  ? "bg-[#1E293B] border-gray-700 text-white"
+                  : "bg-white border-gray-200 text-gray-800"
+              }`}
             >
               <div className="flex items-center justify-between border-b pb-3 border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-2.5">
@@ -1461,7 +1624,10 @@ export const ActiveConversation: React.FC<Props> = ({
                 </button>
               </div>
 
-              <form onSubmit={handleEnviarPropuesta} className="space-y-3.5 text-xs sm:text-sm">
+              <form
+                onSubmit={handleEnviarPropuesta}
+                className="space-y-3.5 text-xs sm:text-sm"
+              >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold mb-1 text-gray-600 dark:text-gray-300">
@@ -1471,7 +1637,10 @@ export const ActiveConversation: React.FC<Props> = ({
                       type="date"
                       value={formPropuesta.fecha}
                       onChange={(e) =>
-                        setFormPropuesta((prev) => ({ ...prev, fecha: e.target.value }))
+                        setFormPropuesta((prev) => ({
+                          ...prev,
+                          fecha: e.target.value,
+                        }))
                       }
                       required
                       className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:border-[#FF8C00]"
@@ -1487,7 +1656,10 @@ export const ActiveConversation: React.FC<Props> = ({
                       placeholder="Ej: 14:00 a 16:00 hs"
                       value={formPropuesta.hora}
                       onChange={(e) =>
-                        setFormPropuesta((prev) => ({ ...prev, hora: e.target.value }))
+                        setFormPropuesta((prev) => ({
+                          ...prev,
+                          hora: e.target.value,
+                        }))
                       }
                       required
                       className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:border-[#FF8C00]"
@@ -1504,7 +1676,10 @@ export const ActiveConversation: React.FC<Props> = ({
                     placeholder="Ej: $35.000 (Mano de obra + insumos)"
                     value={formPropuesta.presupuesto}
                     onChange={(e) =>
-                      setFormPropuesta((prev) => ({ ...prev, presupuesto: e.target.value }))
+                      setFormPropuesta((prev) => ({
+                        ...prev,
+                        presupuesto: e.target.value,
+                      }))
                     }
                     className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:border-[#FF8C00]"
                   />
@@ -1519,7 +1694,10 @@ export const ActiveConversation: React.FC<Props> = ({
                     placeholder="Ej: Llaves térmicas, teflón, repuestos básicos"
                     value={formPropuesta.materiales}
                     onChange={(e) =>
-                      setFormPropuesta((prev) => ({ ...prev, materiales: e.target.value }))
+                      setFormPropuesta((prev) => ({
+                        ...prev,
+                        materiales: e.target.value,
+                      }))
                     }
                     className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:border-[#FF8C00]"
                   />
@@ -1534,7 +1712,10 @@ export const ActiveConversation: React.FC<Props> = ({
                     placeholder="Ej: Si llueve, coordinamos un rato antes de salir."
                     value={formPropuesta.nota}
                     onChange={(e) =>
-                      setFormPropuesta((prev) => ({ ...prev, nota: e.target.value }))
+                      setFormPropuesta((prev) => ({
+                        ...prev,
+                        nota: e.target.value,
+                      }))
                     }
                     className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:border-[#FF8C00] resize-none"
                   />
@@ -1559,7 +1740,7 @@ export const ActiveConversation: React.FC<Props> = ({
               </form>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
       {visitaConfirmadaModal &&
@@ -1574,20 +1755,31 @@ export const ActiveConversation: React.FC<Props> = ({
                   ¡Visita Técnica Confirmada!
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                  Coordinaste la visita con <strong className="text-gray-700 dark:text-gray-200">{otherPerson.name}</strong> para el{' '}
-                  <strong className="text-[#FF8C00]">{visitaConfirmadaModal.fecha}</strong> ({visitaConfirmadaModal.hora}).
+                  Coordinaste la visita con{" "}
+                  <strong className="text-gray-700 dark:text-gray-200">
+                    {otherPerson.name}
+                  </strong>{" "}
+                  para el{" "}
+                  <strong className="text-[#FF8C00]">
+                    {visitaConfirmadaModal.fecha}
+                  </strong>{" "}
+                  ({visitaConfirmadaModal.hora}).
                 </p>
               </div>
 
               <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800 text-xs space-y-1">
                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
                   <span>Presupuesto:</span>
-                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">{visitaConfirmadaModal.presupuesto || 'A convenir'}</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                    {visitaConfirmadaModal.presupuesto || "A convenir"}
+                  </span>
                 </div>
                 {visitaConfirmadaModal.materiales && (
                   <div className="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>Insumos / Materiales:</span>
-                    <span className="font-medium text-gray-800 dark:text-gray-200 text-right truncate max-w-[160px]">{visitaConfirmadaModal.materiales}</span>
+                    <span className="font-medium text-gray-800 dark:text-gray-200 text-right truncate max-w-[160px]">
+                      {visitaConfirmadaModal.materiales}
+                    </span>
                   </div>
                 )}
               </div>
@@ -1614,7 +1806,7 @@ export const ActiveConversation: React.FC<Props> = ({
               </div>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
       {mostrarModalSeguridad &&
@@ -1643,7 +1835,10 @@ export const ActiveConversation: React.FC<Props> = ({
                       1. Pago Protegido (Escrow)
                     </h5>
                     <p className="text-gray-600 dark:text-gray-300 mt-0.5 leading-relaxed">
-                      Tu dinero queda resguardado de forma segura en la plataforma y solo se libera al profesional cuando confirmás que el trabajo fue realizado a tu entera conformidad.
+                      Tu dinero queda resguardado de forma segura en la
+                      plataforma y solo se libera al profesional cuando
+                      confirmás que el trabajo fue realizado a tu entera
+                      conformidad.
                     </p>
                   </div>
                 </div>
@@ -1655,7 +1850,10 @@ export const ActiveConversation: React.FC<Props> = ({
                       2. Nunca abones por fuera
                     </h5>
                     <p className="text-gray-600 dark:text-gray-300 mt-0.5 leading-relaxed">
-                      No realices transferencias a CBU/alias personales ni entregues pagos en efectivo fuera de la app. Los acuerdos externos <strong>anulan la garantía y el reembolso</strong>.
+                      No realices transferencias a CBU/alias personales ni
+                      entregues pagos en efectivo fuera de la app. Los acuerdos
+                      externos{" "}
+                      <strong>anulan la garantía y el reembolso</strong>.
                     </p>
                   </div>
                 </div>
@@ -1667,7 +1865,10 @@ export const ActiveConversation: React.FC<Props> = ({
                       3. Mediación y Soporte 24/7
                     </h5>
                     <p className="text-gray-600 dark:text-gray-300 mt-0.5 leading-relaxed">
-                      Todos los mensajes, fotos y notas de voz registrados en este chat constituyen respaldo oficial para que nuestro equipo de mediación intervenga ante cualquier disconformidad.
+                      Todos los mensajes, fotos y notas de voz registrados en
+                      este chat constituyen respaldo oficial para que nuestro
+                      equipo de mediación intervenga ante cualquier
+                      disconformidad.
                     </p>
                   </div>
                 </div>
@@ -1682,10 +1883,11 @@ export const ActiveConversation: React.FC<Props> = ({
               </button>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
-      {mostrarConfirmacionEnvioRiesgo && mensajePendienteRiesgo &&
+      {mostrarConfirmacionEnvioRiesgo &&
+        mensajePendienteRiesgo &&
         createPortal(
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
             <div className="bg-white dark:bg-[#1E293B] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-amber-500/40">
@@ -1700,7 +1902,12 @@ export const ActiveConversation: React.FC<Props> = ({
               </p>
 
               <div className="mt-3.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 text-xs text-amber-900 dark:text-amber-200 leading-normal">
-                <strong>⚠️ Recordatorio importante:</strong> Los pagos y acuerdos acordados por fuera de ExpertoYa <strong>pierden la cobertura de la Garantía de Pago Protegido (Escrow)</strong> y el respaldo de mediación de disputas.
+                <strong>⚠️ Recordatorio importante:</strong> Los pagos y
+                acuerdos acordados por fuera de ExpertoYa{" "}
+                <strong>
+                  pierden la cobertura de la Garantía de Pago Protegido (Escrow)
+                </strong>{" "}
+                y el respaldo de mediación de disputas.
               </div>
 
               <div className="mt-5 flex gap-2.5">
@@ -1728,7 +1935,7 @@ export const ActiveConversation: React.FC<Props> = ({
               </div>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
       {llamadaEntrante &&
@@ -1749,7 +1956,7 @@ export const ActiveConversation: React.FC<Props> = ({
                   src={
                     llamadaEntrante.caller?.avatar ||
                     `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                      llamadaEntrante.caller?.name || 'Usuario'
+                      llamadaEntrante.caller?.name || "Usuario",
                     )}&background=00BFA5&color=ffffff`
                   }
                   alt={llamadaEntrante.caller?.name}
@@ -1758,7 +1965,7 @@ export const ActiveConversation: React.FC<Props> = ({
               </div>
 
               <h3 className="text-xl font-bold text-white mb-1">
-                {llamadaEntrante.caller?.name || 'Usuario ExpertoYa'}
+                {llamadaEntrante.caller?.name || "Usuario ExpertoYa"}
               </h3>
               <p className="text-xs text-gray-400 mb-6 font-medium">
                 Diagnóstico preliminar visual en vivo
@@ -1784,7 +1991,7 @@ export const ActiveConversation: React.FC<Props> = ({
               </div>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
       {llamadaSaliente &&
@@ -1805,7 +2012,7 @@ export const ActiveConversation: React.FC<Props> = ({
                   src={
                     otherPerson.avatar ||
                     `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                      otherPerson.name
+                      otherPerson.name,
                     )}&background=00BFA5&color=ffffff`
                   }
                   alt={otherPerson.name}
@@ -1817,7 +2024,8 @@ export const ActiveConversation: React.FC<Props> = ({
                 Llamando a {otherPerson.name}...
               </h3>
               <p className="text-xs text-gray-400 mb-6 font-medium">
-                Esperando que conteste para iniciar el diagnóstico visual por cámara.
+                Esperando que conteste para iniciar el diagnóstico visual por
+                cámara.
               </p>
 
               <button
@@ -1830,36 +2038,37 @@ export const ActiveConversation: React.FC<Props> = ({
               </button>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
       {salaUrlActiva &&
         createPortal(
           <VideoCallRoom
-            chatStatus={estaBloqueado ? 'closed' : 'active'}
+            chatStatus={estaBloqueado ? "closed" : "active"}
             roomUrl={salaUrlActiva}
             userName={
               user?.nombre
-                ? `${user.nombre} ${user.apellido || ''}`.trim()
-                : activeRole === 'CLIENTE'
-                  ? 'Cliente ExpertoYa'
-                  : 'Profesional ExpertoYa'
+                ? `${user.nombre} ${user.apellido || ""}`.trim()
+                : activeRole === "CLIENTE"
+                  ? "Cliente ExpertoYa"
+                  : "Profesional ExpertoYa"
             }
-            userRole={activeRole.toLowerCase() as 'cliente' | 'profesional'}
+            userRole={activeRole.toLowerCase() as "cliente" | "profesional"}
             otherName={otherPerson.name}
             onCloseCall={finalizarVideollamada}
           />,
-          document.body
+          document.body,
         )}
 
       {modalBloqueoAbierto &&
         createPortal(
           <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-150 font-['Plus_Jakarta_Sans',sans-serif]">
             <div
-              className={`w-full max-w-md rounded-3xl shadow-2xl p-6 border space-y-4 animate-in zoom-in-95 duration-150 ${isDark
-                  ? 'bg-[#121826] border-gray-800 text-[#FDFCF4]'
-                  : 'bg-white border-gray-100 text-gray-900'
-                }`}
+              className={`w-full max-w-md rounded-3xl shadow-2xl p-6 border space-y-4 animate-in zoom-in-95 duration-150 ${
+                isDark
+                  ? "bg-[#121826] border-gray-800 text-[#FDFCF4]"
+                  : "bg-white border-gray-100 text-gray-900"
+              }`}
             >
               <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
                 <div className="flex items-center gap-2.5 text-[#EF4444]">
@@ -1891,22 +2100,23 @@ export const ActiveConversation: React.FC<Props> = ({
 
                 <div className="space-y-2">
                   {[
-                    'Trato inadecuado o irrespetuoso',
-                    'Insistencia de contacto o cobro por fuera',
-                    'Spam o mensajes no deseados',
-                    'Desacuerdo grave o incumplimiento',
-                    'Otro motivo',
+                    "Trato inadecuado o irrespetuoso",
+                    "Insistencia de contacto o cobro por fuera",
+                    "Spam o mensajes no deseados",
+                    "Desacuerdo grave o incumplimiento",
+                    "Otro motivo",
                   ].map((motivo) => (
                     <label
                       key={motivo}
-                      className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all ${motivoBloqueo === motivo
+                      className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all ${
+                        motivoBloqueo === motivo
                           ? isDark
-                            ? 'bg-red-500/10 border-red-500/40 text-red-400'
-                            : 'bg-red-50 border-red-200 text-red-700 font-semibold'
+                            ? "bg-red-500/10 border-red-500/40 text-red-400"
+                            : "bg-red-50 border-red-200 text-red-700 font-semibold"
                           : isDark
-                            ? 'bg-[#1F2937] border-gray-700 text-gray-300 hover:border-gray-600'
-                            : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                        }`}
+                            ? "bg-[#1F2937] border-gray-700 text-gray-300 hover:border-gray-600"
+                            : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+                      }`}
                     >
                       <input
                         type="radio"
@@ -1930,17 +2140,20 @@ export const ActiveConversation: React.FC<Props> = ({
                     value={detalleBloqueo}
                     onChange={(e) => setDetalleBloqueo(e.target.value)}
                     placeholder="Explica brevemente qué ocurrió..."
-                    className={`w-full p-2.5 text-xs rounded-xl border outline-none transition-colors ${isDark
-                        ? 'bg-[#1F2937] border-gray-700 text-white placeholder-gray-500 focus:border-[#EF4444]'
-                        : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-[#EF4444] focus:bg-white'
-                      }`}
+                    className={`w-full p-2.5 text-xs rounded-xl border outline-none transition-colors ${
+                      isDark
+                        ? "bg-[#1F2937] border-gray-700 text-white placeholder-gray-500 focus:border-[#EF4444]"
+                        : "bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-[#EF4444] focus:bg-white"
+                    }`}
                   />
                 </div>
 
                 <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-700 dark:text-amber-400 text-xs flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
                   <p className="leading-relaxed">
-                    Al confirmar el bloqueo, se cancelará cualquier llamada en curso, la conversación quedará congelada y se notificará al Administrador.
+                    Al confirmar el bloqueo, se cancelará cualquier llamada en
+                    curso, la conversación quedará congelada y se notificará al
+                    Administrador.
                   </p>
                 </div>
               </div>
@@ -1965,22 +2178,25 @@ export const ActiveConversation: React.FC<Props> = ({
                   ) : (
                     <Ban className="w-4 h-4" />
                   )}
-                  <span>{isBloqueando ? 'Bloqueando...' : 'Confirmar Bloqueo'}</span>
+                  <span>
+                    {isBloqueando ? "Bloqueando..." : "Confirmar Bloqueo"}
+                  </span>
                 </button>
               </div>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
       {modalDenunciaAbierto &&
         createPortal(
           <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-150 font-['Plus_Jakarta_Sans',sans-serif]">
             <div
-              className={`w-full max-w-lg rounded-3xl shadow-2xl p-6 border space-y-4 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto ${isDark
-                  ? 'bg-[#121826] border-gray-800 text-[#FDFCF4]'
-                  : 'bg-white border-gray-100 text-gray-900'
-                }`}
+              className={`w-full max-w-lg rounded-3xl shadow-2xl p-6 border space-y-4 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto ${
+                isDark
+                  ? "bg-[#121826] border-gray-800 text-[#FDFCF4]"
+                  : "bg-white border-gray-100 text-gray-900"
+              }`}
             >
               <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
                 <div className="flex items-center gap-2.5">
@@ -2007,47 +2223,49 @@ export const ActiveConversation: React.FC<Props> = ({
 
               <div className="space-y-3.5 text-xs sm:text-sm">
                 <p className="text-gray-600 dark:text-gray-300">
-                  Selecciona la falta cometida según nuestras políticas de seguridad:
+                  Selecciona la falta cometida según nuestras políticas de
+                  seguridad:
                 </p>
 
                 <div className="space-y-2">
                   {[
                     {
-                      tipo: 'PAGO_FUERA_PLATAFORMA',
-                      titulo: '💸 Intento de cobro/pago fuera de la plataforma',
-                      sub: 'Evasión de Garantía Escrow y cobros indebidos',
+                      tipo: "PAGO_FUERA_PLATAFORMA",
+                      titulo: "💸 Intento de cobro/pago fuera de la plataforma",
+                      sub: "Evasión de Garantía Escrow y cobros indebidos",
                     },
                     {
-                      tipo: 'ACOSO_O_LENGUAJE_OFENSIVO',
-                      titulo: '🤬 Lenguaje ofensivo, discriminatorio o acoso',
-                      sub: 'Insultos, amenazas o conducta impropia',
+                      tipo: "ACOSO_O_LENGUAJE_OFENSIVO",
+                      titulo: "🤬 Lenguaje ofensivo, discriminatorio o acoso",
+                      sub: "Insultos, amenazas o conducta impropia",
                     },
                     {
-                      tipo: 'INCUMPLIMIENTO_SERVICIO',
-                      titulo: '🚫 Incumplimiento injustificado del servicio',
-                      sub: 'Ausencia sin aviso, abandono o mala fe',
+                      tipo: "INCUMPLIMIENTO_SERVICIO",
+                      titulo: "🚫 Incumplimiento injustificado del servicio",
+                      sub: "Ausencia sin aviso, abandono o mala fe",
                     },
                     {
-                      tipo: 'SUPLANTACION_O_FRAUDE',
-                      titulo: '🎭 Suplantación de identidad o perfil falso',
-                      sub: 'Datos no coincidentes o documentación apócrifa',
+                      tipo: "SUPLANTACION_O_FRAUDE",
+                      titulo: "🎭 Suplantación de identidad o perfil falso",
+                      sub: "Datos no coincidentes o documentación apócrifa",
                     },
                     {
-                      tipo: 'OTRO',
-                      titulo: '⚠️ Otro motivo grave',
-                      sub: 'Cualquier otra vulneración a los términos',
+                      tipo: "OTRO",
+                      titulo: "⚠️ Otro motivo grave",
+                      sub: "Cualquier otra vulneración a los términos",
                     },
                   ].map((item) => (
                     <label
                       key={item.tipo}
-                      className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all ${tipoMotivoDenuncia === item.tipo
+                      className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all ${
+                        tipoMotivoDenuncia === item.tipo
                           ? isDark
-                            ? 'bg-amber-500/10 border-amber-500/40 text-amber-400'
-                            : 'bg-amber-50 border-amber-200 text-amber-900 font-semibold'
+                            ? "bg-amber-500/10 border-amber-500/40 text-amber-400"
+                            : "bg-amber-50 border-amber-200 text-amber-900 font-semibold"
                           : isDark
-                            ? 'bg-[#1F2937] border-gray-700 text-gray-300 hover:border-gray-600'
-                            : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                        }`}
+                            ? "bg-[#1F2937] border-gray-700 text-gray-300 hover:border-gray-600"
+                            : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+                      }`}
                     >
                       <input
                         type="radio"
@@ -2058,7 +2276,9 @@ export const ActiveConversation: React.FC<Props> = ({
                         className="mt-0.5 text-amber-600 focus:ring-amber-500"
                       />
                       <div className="flex-1">
-                        <p className="text-xs font-bold leading-tight">{item.titulo}</p>
+                        <p className="text-xs font-bold leading-tight">
+                          {item.titulo}
+                        </p>
                         <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
                           {item.sub}
                         </p>
@@ -2076,10 +2296,11 @@ export const ActiveConversation: React.FC<Props> = ({
                     value={detalleDenuncia}
                     onChange={(e) => setDetalleDenuncia(e.target.value)}
                     placeholder="Describe con la mayor claridad posible los hechos ocurridos..."
-                    className={`w-full p-2.5 text-xs rounded-xl border outline-none transition-colors ${isDark
-                        ? 'bg-[#1F2937] border-gray-700 text-white placeholder-gray-500 focus:border-amber-500'
-                        : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-amber-500 focus:bg-white'
-                      }`}
+                    className={`w-full p-2.5 text-xs rounded-xl border outline-none transition-colors ${
+                      isDark
+                        ? "bg-[#1F2937] border-gray-700 text-white placeholder-gray-500 focus:border-amber-500"
+                        : "bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400 focus:border-amber-500 focus:bg-white"
+                    }`}
                   />
                 </div>
 
@@ -2087,18 +2308,24 @@ export const ActiveConversation: React.FC<Props> = ({
                   <input
                     type="checkbox"
                     checked={denunciaBloquearTambien}
-                    onChange={(e) => setDenunciaBloquearTambien(e.target.checked)}
+                    onChange={(e) =>
+                      setDenunciaBloquearTambien(e.target.checked)
+                    }
                     className="w-4 h-4 rounded text-[#EF4444] focus:ring-[#EF4444]"
                   />
                   <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                    Bloquear también a este usuario para no recibir más mensajes ni llamadas
+                    Bloquear también a este usuario para no recibir más mensajes
+                    ni llamadas
                   </span>
                 </label>
 
                 <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 dark:text-red-400 text-xs flex items-start gap-2">
                   <AlertOctagon className="w-4 h-4 shrink-0 mt-0.5 text-[#EF4444]" />
                   <p className="leading-relaxed">
-                    Esta denuncia ingresará a la bandeja de <strong>Auditoría de Denuncias</strong> del Administrador con la transcripción completa del chat para la resolución de sanciones disciplinarias.
+                    Esta denuncia ingresará a la bandeja de{" "}
+                    <strong>Auditoría de Denuncias</strong> del Administrador
+                    con la transcripción completa del chat para la resolución de
+                    sanciones disciplinarias.
                   </p>
                 </div>
               </div>
@@ -2123,12 +2350,14 @@ export const ActiveConversation: React.FC<Props> = ({
                   ) : (
                     <ShieldAlert className="w-4 h-4" />
                   )}
-                  <span>{isDenunciando ? 'Enviando...' : 'Enviar Denuncia'}</span>
+                  <span>
+                    {isDenunciando ? "Enviando..." : "Enviar Denuncia"}
+                  </span>
                 </button>
               </div>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
     </div>
   );

@@ -1,12 +1,21 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Mail, ArrowLeft, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
+import {
+  Mail,
+  ArrowLeft,
+  ArrowRight,
+  Loader2,
+  CheckCircle2,
+} from "lucide-react";
 import { Logo } from "../components/Logo";
 
 export const ForgotPassword = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const initialEmail = (location.state as { email?: string })?.email || searchParams.get("email") || "";
+  const initialEmail =
+    (location.state as { email?: string })?.email ||
+    searchParams.get("email") ||
+    "";
 
   const [email, setEmail] = useState(initialEmail);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,11 +33,14 @@ export const ForgotPassword = () => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:3000/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
-      });
+      const response = await fetch(
+        "https://expertoya-backend.onrender.com/api/auth/forgot-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.trim().toLowerCase() }),
+        },
+      );
 
       const data = await response.json();
       if (!response.ok) {
@@ -51,7 +63,10 @@ export const ForgotPassword = () => {
     <div className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 bg-background dark:bg-dark-bg transition-colors duration-300 relative py-12">
       {/* Brand Logo outside card */}
       <div className="mb-6 sm:mb-8 text-center">
-        <Link to="/" className="inline-flex items-center justify-center group hover:opacity-90 transition-opacity">
+        <Link
+          to="/"
+          className="inline-flex items-center justify-center group hover:opacity-90 transition-opacity"
+        >
           <Logo className="h-12 sm:h-14 w-auto" />
         </Link>
       </div>
@@ -64,7 +79,8 @@ export const ForgotPassword = () => {
                 ¿Olvidaste tu contraseña?
               </h2>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Ingresa tu correo y te enviaremos las instrucciones para restablecerla de forma segura.
+                Ingresa tu correo y te enviaremos las instrucciones para
+                restablecerla de forma segura.
               </p>
             </>
           ) : (
@@ -76,7 +92,11 @@ export const ForgotPassword = () => {
                 ¡Revisa tu correo!
               </h2>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Hemos enviado un correo a <strong className="text-dark dark:text-white font-bold">{email}</strong> con un enlace para crear una nueva clave.
+                Hemos enviado un correo a{" "}
+                <strong className="text-dark dark:text-white font-bold">
+                  {email}
+                </strong>{" "}
+                con un enlace para crear una nueva clave.
               </p>
             </>
           )}
@@ -143,8 +163,14 @@ export const ForgotPassword = () => {
             <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 p-4 rounded-2xl text-xs sm:text-sm text-emerald-800 dark:text-emerald-300 space-y-2">
               <p className="font-bold">¿Qué debes hacer ahora?</p>
               <ul className="list-disc list-inside space-y-1 text-emerald-700 dark:text-emerald-400">
-                <li>Abre tu bandeja de entrada o carpeta de correo no deseado (spam).</li>
-                <li>Haz clic en el enlace que te enviamos para crear tu nueva contraseña.</li>
+                <li>
+                  Abre tu bandeja de entrada o carpeta de correo no deseado
+                  (spam).
+                </li>
+                <li>
+                  Haz clic en el enlace que te enviamos para crear tu nueva
+                  contraseña.
+                </li>
                 <li>El enlace tiene una validez de 1 hora por seguridad.</li>
               </ul>
             </div>

@@ -18,11 +18,18 @@ export const Login = () => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:3000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), password, plataforma: "WEB" }),
-      });
+      const response = await fetch(
+        "https://expertoya-backend.onrender.com/api/auth/login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+            password,
+            plataforma: "WEB",
+          }),
+        },
+      );
 
       const data = await response.json();
       if (!response.ok)
@@ -49,7 +56,10 @@ export const Login = () => {
     <div className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 bg-background dark:bg-dark-bg transition-colors duration-300 relative py-12">
       {/* Brand Logo outside card */}
       <div className="mb-6 sm:mb-8 text-center">
-        <Link to="/" className="inline-flex items-center justify-center group hover:opacity-90 transition-opacity">
+        <Link
+          to="/"
+          className="inline-flex items-center justify-center group hover:opacity-90 transition-opacity"
+        >
           <Logo className="h-12 sm:h-14 w-auto" />
         </Link>
       </div>

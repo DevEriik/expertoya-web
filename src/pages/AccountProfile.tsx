@@ -58,12 +58,17 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
     descripcion_perfil: "",
     disponible: true,
     rol: user?.rol || "CLIENTE",
-    oficios: [] as Array<{ id: number; nombre_oficio?: string; nombre?: string }>,
+    oficios: [] as Array<{
+      id: number;
+      nombre_oficio?: string;
+      nombre?: string;
+    }>,
     oficios_pendientes_ids: [] as number[],
     matricula_documento: null as string | null,
   });
 
-  const isProfesional = user?.rol === "PROFESIONAL" || profile.rol === "PROFESIONAL";
+  const isProfesional =
+    user?.rol === "PROFESIONAL" || profile.rol === "PROFESIONAL";
   const isCliente = !isProfesional;
 
   const [services, setServices] = useState<ProfessionalService[]>([]);
@@ -71,23 +76,31 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
 
   // Modales
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(
-    user?.rol === "PROFESIONAL" && autoOpenCreateModal
+    user?.rol === "PROFESIONAL" && autoOpenCreateModal,
   );
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [selectedServiceDetail, setSelectedServiceDetail] = useState<ProfessionalService | null>(null);
-  const [editingService, setEditingService] = useState<ProfessionalService | null>(null);
-  const [serviceToDelete, setServiceToDelete] = useState<ProfessionalService | null>(null);
+  const [selectedServiceDetail, setSelectedServiceDetail] =
+    useState<ProfessionalService | null>(null);
+  const [editingService, setEditingService] =
+    useState<ProfessionalService | null>(null);
+  const [serviceToDelete, setServiceToDelete] =
+    useState<ProfessionalService | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Notificaciones Toast
-  const [toastMessage, setToastMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [toastMessage, setToastMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   // Carga de datos de perfil desde la Base de Datos
   const fetchProfileFromDB = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:3000";
+      const apiBase =
+        import.meta.env.VITE_API_URL ||
+        "https://expertoya-backend.onrender.com";
 
       // Si el usuario autenticado es CLIENTE, consultamos sus datos personales
       if (user?.rol === "CLIENTE") {
@@ -159,7 +172,8 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
           descripcion_perfil: data.descripcion_perfil || "",
           disponible: data.disponible ?? true,
           trade:
-            data.rol === "PROFESIONAL" && (data.estado_validado || data.estado_auditoria === "APROBADO")
+            data.rol === "PROFESIONAL" &&
+            (data.estado_validado || data.estado_auditoria === "APROBADO")
               ? "Profesional Certificado"
               : "Profesional",
           estado_validado: Boolean(data.estado_validado),
@@ -173,7 +187,10 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
         }));
       }
     } catch (err) {
-      console.warn("No se pudo cargar el perfil desde la BD, usando datos locales:", err);
+      console.warn(
+        "No se pudo cargar el perfil desde la BD, usando datos locales:",
+        err,
+      );
     }
   }, [user]);
 
@@ -206,7 +223,8 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
     };
 
     window.addEventListener("servicesChanged", handleServicesChanged);
-    return () => window.removeEventListener("servicesChanged", handleServicesChanged);
+    return () =>
+      window.removeEventListener("servicesChanged", handleServicesChanged);
   }, [fetchProfileFromDB, loadServicesData]);
 
   const activeServicesCount = services.filter((s) => s.servicio_activo).length;
@@ -216,9 +234,13 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
     ((profile.estado_validado && profile.estado_auditoria === "APROBADO") ||
       profile.rol === "PROFESIONAL");
   const isPendiente =
-    isProfesional && profile.tiene_solicitud && profile.estado_auditoria === "PENDIENTE";
+    isProfesional &&
+    profile.tiene_solicitud &&
+    profile.estado_auditoria === "PENDIENTE";
   const isRechazado =
-    isProfesional && profile.tiene_solicitud && profile.estado_auditoria === "RECHAZADO";
+    isProfesional &&
+    profile.tiene_solicitud &&
+    profile.estado_auditoria === "RECHAZADO";
 
   const handleOpenCreateService = () => {
     if (isCliente) {
@@ -245,7 +267,7 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
   };
 
   const handleSaveService = async (
-    serviceData: Omit<ProfessionalService, "id"> & { id?: string }
+    serviceData: Omit<ProfessionalService, "id"> & { id?: string },
   ) => {
     try {
       await saveService(serviceData);
@@ -259,7 +281,8 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
       });
       await loadServicesData();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "No se pudo guardar el servicio.";
+      const msg =
+        err instanceof Error ? err.message : "No se pudo guardar el servicio.";
       setToastMessage({
         type: "error",
         text: msg,
@@ -278,7 +301,10 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
       });
       await loadServicesData();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "No se pudo cambiar el estado del servicio.";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "No se pudo cambiar el estado del servicio.";
       setToastMessage({
         type: "error",
         text: msg,
@@ -299,7 +325,8 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
       setSelectedServiceDetail(null);
       await loadServicesData();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "No se pudo eliminar el servicio.";
+      const msg =
+        err instanceof Error ? err.message : "No se pudo eliminar el servicio.";
       setToastMessage({
         type: "error",
         text: msg,
@@ -467,7 +494,9 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
             <div className="flex items-center gap-3">
               <PauseCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
               <span className="text-xs sm:text-sm font-bold">
-                Tu perfil se encuentra en Modo Pausa y no aparece en las búsquedas de clientes. Puedes reactivarlo cuando desees desde Editar Perfil.
+                Tu perfil se encuentra en Modo Pausa y no aparece en las
+                búsquedas de clientes. Puedes reactivarlo cuando desees desde
+                Editar Perfil.
               </span>
             </div>
             <button
@@ -486,14 +515,18 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
             <div className="flex items-center gap-3 mb-2">
               <Clock className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0" />
               <div>
-                <h3 className="text-base font-extrabold">Solicitud en Revisión</h3>
+                <h3 className="text-base font-extrabold">
+                  Solicitud en Revisión
+                </h3>
                 <span className="text-xs font-bold text-amber-700 dark:text-amber-300">
                   En proceso de auditoría por el equipo de administración
                 </span>
               </div>
             </div>
             <p className="text-xs sm:text-sm leading-relaxed text-amber-800 dark:text-amber-300/90 pl-9">
-              Tus documentos de identidad, oficios y situación fiscal han sido recibidos y se encuentran en proceso de verificación. Mientras tanto, tu perfil opera en modo cliente.
+              Tus documentos de identidad, oficios y situación fiscal han sido
+              recibidos y se encuentran en proceso de verificación. Mientras
+              tanto, tu perfil opera en modo cliente.
             </p>
           </section>
         )}
@@ -504,14 +537,18 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
             <div className="flex items-center gap-3 mb-2">
               <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400 shrink-0" />
               <div>
-                <h3 className="text-base font-extrabold">Solicitud Rechazada</h3>
+                <h3 className="text-base font-extrabold">
+                  Solicitud Rechazada
+                </h3>
                 <span className="text-xs font-bold text-red-700 dark:text-red-300">
                   Requiere corrección de documentos
                 </span>
               </div>
             </div>
             <p className="text-xs sm:text-sm leading-relaxed text-red-800 dark:text-red-300/90 pl-9 mb-3">
-              Motivo: {profile.motivo_rechazo || "La documentación cargada no cumple con los requisitos o es ilegible."}
+              Motivo:{" "}
+              {profile.motivo_rechazo ||
+                "La documentación cargada no cumple con los requisitos o es ilegible."}
             </p>
           </section>
         )}
@@ -531,7 +568,9 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
                     Tus Solicitudes y Conversaciones
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-600 dark:text-gray-400 max-w-xl leading-relaxed">
-                    Gestiona tus solicitudes activas, comunícate en tiempo real con los profesionales contratados y califica los servicios finalizados con el sistema seguro Closed-Loop.
+                    Gestiona tus solicitudes activas, comunícate en tiempo real
+                    con los profesionales contratados y califica los servicios
+                    finalizados con el sistema seguro Closed-Loop.
                   </p>
                 </div>
 
@@ -557,7 +596,10 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
                     ¿Ofreces un Oficio o Servicio Profesional?
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-600 dark:text-gray-400 max-w-xl leading-relaxed">
-                    Si eres electricista, gasista, plomero o especialista de oficio, puedes registrarte como profesional en ExpertoYa para acceder al catálogo de servicios, recibir pagos garantizados y ganar clientes en tu zona.
+                    Si eres electricista, gasista, plomero o especialista de
+                    oficio, puedes registrarte como profesional en ExpertoYa
+                    para acceder al catálogo de servicios, recibir pagos
+                    garantizados y ganar clientes en tu zona.
                   </p>
                 </div>
 
@@ -627,7 +669,8 @@ export const AccountProfile: React.FC<AccountProfileProps> = ({
                   Sin servicios publicados
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-gray-400 max-w-md mb-6 leading-relaxed">
-                  Publica tus tarifas y tiempos para que los clientes te contraten directamente sin consultas previas.
+                  Publica tus tarifas y tiempos para que los clientes te
+                  contraten directamente sin consultas previas.
                 </p>
                 <button
                   type="button"
