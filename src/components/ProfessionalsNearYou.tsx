@@ -47,7 +47,7 @@ export const ProfessionalsNearYou = () => {
       setError(null);
       try {
         const respuesta = await fetch(
-          "http://localhost:3000/api/profesionales/public",
+          "https://expertoya-backend.onrender.com/api/profesionales/public",
           { signal: controller.signal },
         );
         if (!respuesta.ok) {

@@ -89,31 +89,36 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
         formData.append("fotos", foto);
       });
 
-      const res = await fetch("http://localhost:3000/api/reviews", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const res = await fetch(
+        "https://expertoya-backend.onrender.com/api/reviews",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
         },
-        body: formData,
-      });
+      );
 
       const data = await res.json();
       if (!res.ok) {
         throw new Error(
-          data.detalle || data.error || "No se pudo registrar la reseña"
+          data.detalle || data.error || "No se pudo registrar la reseña",
         );
       }
 
       onSuccess();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error al enviar la reseña.";
+      const msg =
+        err instanceof Error ? err.message : "Error al enviar la reseña.";
       setErrorMsg(msg);
     } finally {
       setEnviando(false);
     }
   };
 
-  const currentDisplayRating = hoverRating !== null ? hoverRating : calificacion;
+  const currentDisplayRating =
+    hoverRating !== null ? hoverRating : calificacion;
 
   return (
     <div
@@ -132,7 +137,10 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
               Calificar Servicio
             </h3>
             <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
-              Profesional: <span className="font-bold text-[#FF8C00]">{profesionalNombre}</span>
+              Profesional:{" "}
+              <span className="font-bold text-[#FF8C00]">
+                {profesionalNombre}
+              </span>
             </p>
           </div>
           <button
@@ -263,7 +271,8 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
             <p className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-300">
               <strong className="font-bold">Garantía Closed-Loop:</strong> Las
               calificaciones son públicas y definitivas. Una vez publicadas, no
-              pueden ser modificadas ni eliminadas para garantizar la transparencia.
+              pueden ser modificadas ni eliminadas para garantizar la
+              transparencia.
             </p>
           </div>
 
@@ -295,4 +304,3 @@ export const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
     </div>
   );
 };
-

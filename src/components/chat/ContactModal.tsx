@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { X, MessageSquare, ShieldCheck, Loader2 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import React, { useState } from "react";
+import { X, MessageSquare, ShieldCheck, Loader2 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
 interface ContactModalProps {
   isOpen: boolean;
@@ -23,7 +23,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({
 }) => {
   const { user, token } = useAuth();
   const [primerMensaje, setPrimerMensaje] = useState(
-    '¡Hola! Me gustaría consultar por la disponibilidad de tu servicio.'
+    "¡Hola! Me gustaría consultar por la disponibilidad de tu servicio.",
   );
   const [loading, setLoading] = useState(false);
 
@@ -33,45 +33,51 @@ export const ContactModal: React.FC<ContactModalProps> = ({
     e.preventDefault();
 
     if (!user) {
-      alert('Debes iniciar sesión para contactar a un profesional.');
+      alert("Debes iniciar sesión para contactar a un profesional.");
       return;
     }
 
     if (user.id === professionalId) {
-      alert('Acción no permitida: No puedes enviarte mensajes a ti mismo.');
+      alert("Acción no permitida: No puedes enviarte mensajes a ti mismo.");
       onClose();
       return;
     }
 
     if (!primerMensaje.trim()) {
-      alert('Por favor ingresa un mensaje para iniciar la conversación.');
+      alert("Por favor ingresa un mensaje para iniciar la conversación.");
       return;
     }
 
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:3000/api/chat/iniciar', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      const res = await fetch(
+        "https://expertoya-backend.onrender.com/api/chat/iniciar",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            profesional_id: professionalId,
+            primer_mensaje: primerMensaje.trim(),
+          }),
         },
-        body: JSON.stringify({
-          profesional_id: professionalId,
-          primer_mensaje: primerMensaje.trim(),
-        }),
-      });
+      );
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'No se pudo iniciar la conversación');
+        throw new Error(data.error || "No se pudo iniciar la conversación");
       }
 
       onClose();
       onSuccess(data.solicitud_id);
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Ocurrió un error al contactar al profesional.';
-      console.error('Error al iniciar conversación:', msg);
+      const msg =
+        error instanceof Error
+          ? error.message
+          : "Ocurrió un error al contactar al profesional.";
+      console.error("Error al iniciar conversación:", msg);
       alert(msg);
     } finally {
       setLoading(false);
@@ -81,7 +87,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({
   const avatarUri =
     professionalPhoto ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      professionalName
+      professionalName,
     )}&background=FF8C00&color=fff`;
 
   return (
@@ -118,7 +124,8 @@ export const ContactModal: React.FC<ContactModalProps> = ({
           )}
 
           <p className="text-sm text-gray-500 dark:text-gray-300 mt-2 max-w-sm">
-            Envía un mensaje para coordinar los detalles del servicio de forma directa y segura.
+            Envía un mensaje para coordinar los detalles del servicio de forma
+            directa y segura.
           </p>
         </div>
 

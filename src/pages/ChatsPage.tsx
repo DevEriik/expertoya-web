@@ -36,7 +36,7 @@ export const ChatsPage = () => {
   const fetchConversaciones = useCallback(() => {
     if (!token) return;
 
-    fetch("http://localhost:3000/api/chat/conversaciones", {
+    fetch("https://expertoya-backend.onrender.com/api/chat/conversaciones", {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -59,32 +59,33 @@ export const ChatsPage = () => {
     chats.find((c) => c.id === activeChatId) ||
     (activeChatId
       ? ({
-        id: activeChatId,
-        client: {
-          id: user?.id || "",
-          name:
-            `${user?.nombre || ""} ${user?.apellido || ""}`.trim() || "Cliente",
-          profession: "Cliente",
-          avatar: null,
-          isVerified: true,
-          role: "CLIENTE",
-        },
-        professional: {
-          id: "",
-          name: "Profesional",
-          profession: "Servicio",
-          avatar: null,
-          isVerified: true,
-          role: "PROFESIONAL",
-        },
-        lastMessage: "",
-        timestamp: "Ahora",
-        unreadCount: 0,
-        status: "EN PROGRESO",
-        escrowStatus: "HELD",
-        escrowAmount: "$0",
-        messages: [],
-      } as ChatSession)
+          id: activeChatId,
+          client: {
+            id: user?.id || "",
+            name:
+              `${user?.nombre || ""} ${user?.apellido || ""}`.trim() ||
+              "Cliente",
+            profession: "Cliente",
+            avatar: null,
+            isVerified: true,
+            role: "CLIENTE",
+          },
+          professional: {
+            id: "",
+            name: "Profesional",
+            profession: "Servicio",
+            avatar: null,
+            isVerified: true,
+            role: "PROFESIONAL",
+          },
+          lastMessage: "",
+          timestamp: "Ahora",
+          unreadCount: 0,
+          status: "EN PROGRESO",
+          escrowStatus: "HELD",
+          escrowAmount: "$0",
+          messages: [],
+        } as ChatSession)
       : null);
 
   const handleReleaseFunds = (targetChatId: string) => {
@@ -99,8 +100,9 @@ export const ChatsPage = () => {
 
   return (
     <div
-      className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${isDark ? "bg-[#121826] text-[#FDFCF4]" : "bg-[#FDFCF4] text-[#283593]"
-        }`}
+      className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
+        isDark ? "bg-[#121826] text-[#FDFCF4]" : "bg-[#FDFCF4] text-[#283593]"
+      }`}
     >
       <Navbar />
 

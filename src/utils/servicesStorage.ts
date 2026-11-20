@@ -36,10 +36,12 @@ export const DEFAULT_SERVICES: ProfessionalService[] = [
 
 let inMemoryServices: ProfessionalService[] | null = null;
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_BASE =
+  import.meta.env.VITE_API_URL || "https://expertoya-backend.onrender.com";
 
 const getAuthHeaders = (): HeadersInit => {
-  const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
+  const token =
+    typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
@@ -52,7 +54,10 @@ const getAuthHeaders = (): HeadersInit => {
 export const getServices = async (): Promise<ProfessionalService[]> => {
   // 1. Intentar obtener desde el backend si hay token
   try {
-    const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
+    const token =
+      typeof localStorage !== "undefined"
+        ? localStorage.getItem("token")
+        : null;
     if (token) {
       const res = await fetch(`${API_BASE}/api/professionals/services`, {
         headers: getAuthHeaders(),
@@ -67,7 +72,10 @@ export const getServices = async (): Promise<ProfessionalService[]> => {
       }
     }
   } catch (err) {
-    console.warn("Backend no disponible para servicios, usando almacenamiento local:", err);
+    console.warn(
+      "Backend no disponible para servicios, usando almacenamiento local:",
+      err,
+    );
   }
 
   // 2. Fallback a localStorage / memoria
@@ -76,7 +84,10 @@ export const getServices = async (): Promise<ProfessionalService[]> => {
   }
 
   try {
-    const raw = typeof localStorage !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+    const raw =
+      typeof localStorage !== "undefined"
+        ? localStorage.getItem(STORAGE_KEY)
+        : null;
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -93,7 +104,7 @@ export const getServices = async (): Promise<ProfessionalService[]> => {
 };
 
 export const saveService = async (
-  serviceData: Omit<ProfessionalService, "id"> & { id?: string }
+  serviceData: Omit<ProfessionalService, "id"> & { id?: string },
 ): Promise<ProfessionalService> => {
   const isEditing = Boolean(serviceData.id);
 
@@ -101,11 +112,11 @@ export const saveService = async (
   if (serviceData.servicio_activo) {
     const current = await getServices();
     const activeCount = current.filter(
-      (s) => s.servicio_activo && (!isEditing || s.id !== serviceData.id)
+      (s) => s.servicio_activo && (!isEditing || s.id !== serviceData.id),
     ).length;
     if (activeCount >= MAX_ACTIVE_SERVICES) {
       throw new Error(
-        `Límite alcanzado: Tienes ${MAX_ACTIVE_SERVICES} servicios activos. Pausa o elimina uno para activar este servicio.`
+        `Límite alcanzado: Tienes ${MAX_ACTIVE_SERVICES} servicios activos. Pausa o elimina uno para activar este servicio.`,
       );
     }
   }
@@ -158,7 +169,10 @@ export const saveService = async (
   return savedItem;
 };
 
-const syncLocalAfterSave = async (item: ProfessionalService, isEditing: boolean) => {
+const syncLocalAfterSave = async (
+  item: ProfessionalService,
+  isEditing: boolean,
+) => {
   const current = inMemoryServices || (await getServices());
   let updated: ProfessionalService[];
   if (isEditing) {
@@ -170,7 +184,9 @@ const syncLocalAfterSave = async (item: ProfessionalService, isEditing: boolean)
   await persistServices(updated);
 };
 
-export const toggleServiceStatus = async (id: string): Promise<ProfessionalService> => {
+export const toggleServiceStatus = async (
+  id: string,
+): Promise<ProfessionalService> => {
   const current = await getServices();
   const existing = current.find((s) => s.id === id);
   if (!existing) {
@@ -180,10 +196,12 @@ export const toggleServiceStatus = async (id: string): Promise<ProfessionalServi
   const newStatus = !existing.servicio_activo;
 
   if (newStatus) {
-    const activeCount = current.filter((s) => s.servicio_activo && s.id !== id).length;
+    const activeCount = current.filter(
+      (s) => s.servicio_activo && s.id !== id,
+    ).length;
     if (activeCount >= MAX_ACTIVE_SERVICES) {
       throw new Error(
-        `Límite alcanzado: Ya cuentas con el máximo de ${MAX_ACTIVE_SERVICES} servicios activos. Pausa otro servicio primero.`
+        `Límite alcanzado: Ya cuentas con el máximo de ${MAX_ACTIVE_SERVICES} servicios activos. Pausa otro servicio primero.`,
       );
     }
   }
